@@ -1,0 +1,21 @@
+# JDTools - Patch conversion utility for Roland JD-800 / JD-990
+
+While it is easy to convert JD-800 patches to use with the JD-990 (the JD-990 itself can do it, and there are PC tools for it as well),
+there don't appear to be any tools to go in the opposite direction. In the general case this makes sense, because the JD-990 has more features.
+
+However, I purchased a sound bank for the JD-800 where the original SysEx dump for the JD-800 was lost and all I got was a SysEx dump for the JD-990, which my JD-800 obviously couldn't load.
+
+Knowing that the patches in this dump must be fully compatible with the JD-800, I started studying the SysEx dump structures of the two synths and threw together some code in half a day to convert between the two.
+
+Right now, the code can only handle SYX files (raw SysEx dumps) and convert from JD-800 patch format to JD-990 and vice versa, but in the future I also want to support special setups, and compiling a list of temporary patches into a patch bank.
+
+There's no plans for supporting the JD-08 or the JD-800 VST plugin at this point in time.
+
+# License
+
+JDTools is provided under the BSD 3-clause license. See [license.md](license.md) for details.
+
+# Building
+
+This project is written in C++20. Currently only Visual Studio 2019 project is provided, but the code is platform-independent and should be trivial to convert to any other build system.
+
