@@ -1,4 +1,4 @@
-// JDTools - Patch conversion tools for Roland JD-800 / JD-990
+// JDTools - Patch conversion utility for Roland JD-800 / JD-990
 // 2022 by Johannes Schultz
 // License: BSD 3-clause
 
@@ -14,12 +14,21 @@
 #include "jd800.h"
 #include "jd990.h"
 
-static void PrintUsage(const auto *programName)
+namespace
 {
-	std::cout << "Usage: " << programName << " <verb> <filename.syx>" << std::endl
-		<< "Verbs:" << std::endl
-		<< "convert  -  Converts from JD-800 to JD-990 SysEx dump or vice versa" << std::endl
-		<< "list     -  Lists all SysEx contents" << std::endl;
+	constexpr uint8_t SYSEX_DEVICE_ID = 0x10;
+}
+
+static void PrintUsage()
+{
+	std::cout <<
+R"(JDTools - Patch conversion utility for Roland JD-800 / JD-990
+
+Usage: JDTools <verb> <filename.syx>
+Verbs:
+convert  -  Converts from JD-800 to JD-990 SysEx dump or vice versa
+list     -  Lists all SysEx contents
+)" << std::endl;
 }
 
 static void ReadUntilEOX(std::istream &f)
@@ -38,7 +47,7 @@ static void WriteSysEx(std::ostream &f, uint32_t outAddress, const bool isJD990,
 	{
 		if (data[i] >= 0x80)
 		{
-			std::cerr << "suspicious byte in SysEx source at " << i << std::endl;
+			std::cerr << "invalid byte in SysEx data block at " << i << " - either broken parameter conversion or broken SysEx source!" << std::endl;
 		}
 	}
 
@@ -48,9 +57,9 @@ static void WriteSysEx(std::ostream &f, uint32_t outAddress, const bool isJD990,
 	{
 		const size_t amountToCopy = std::min(size , size_t(256));
 		if(isJD990)
-			outMessage.assign({ 0xF0, 0x41, 0x10, 0x57, 0x12, static_cast<uint8_t>((outAddress >> 21) & 0x7F), static_cast<uint8_t>((outAddress >> 14) & 0x7F), static_cast<uint8_t>((outAddress >> 7) & 0x7F), static_cast<uint8_t>(outAddress & 0x7F) });
+			outMessage.assign({ 0xF0, 0x41, SYSEX_DEVICE_ID, 0x57, 0x12, static_cast<uint8_t>((outAddress >> 21) & 0x7F), static_cast<uint8_t>((outAddress >> 14) & 0x7F), static_cast<uint8_t>((outAddress >> 7) & 0x7F), static_cast<uint8_t>(outAddress & 0x7F) });
 		else
-			outMessage.assign({ 0xF0, 0x41, 0x10, 0x3D, 0x12, static_cast<uint8_t>((outAddress >> 14) & 0x7F), static_cast<uint8_t>((outAddress >> 7) & 0x7F), static_cast<uint8_t>(outAddress & 0x7F) });
+			outMessage.assign({ 0xF0, 0x41, SYSEX_DEVICE_ID, 0x3D, 0x12, static_cast<uint8_t>((outAddress >> 14) & 0x7F), static_cast<uint8_t>((outAddress >> 7) & 0x7F), static_cast<uint8_t>(outAddress & 0x7F) });
 		outMessage.insert(outMessage.end(), data + offset, data + offset + amountToCopy);
 		uint8_t checksum = 0;
 		for (size_t i = 5; i < outMessage.size(); i++)
@@ -73,7 +82,7 @@ int main(const int argc, char *argv[])
 {
 	if (argc != 3)
 	{
-		PrintUsage(argv[0]);
+		PrintUsage();
 		return 1;
 	}
 	static_assert(sizeof(Patch800) == 384);
@@ -81,17 +90,18 @@ int main(const int argc, char *argv[])
 	static_assert(sizeof(SpecialSetup800) == 5378);
 	static_assert(sizeof(SpecialSetup990) == 6524);
 
-	const std::string verb = argv[1];
+	const std::string_view verb = argv[1];
 	if (verb != "convert" && verb != "list")
 	{
-		PrintUsage(argv[0]);
+		PrintUsage();
 		return 1;
 	}
 
-	std::ifstream inFile(argv[2], std::ios::binary);
+	const std::string inFilename = argv[2];
+	std::ifstream inFile(inFilename, std::ios::binary);
 	if (!inFile)
 	{
-		std::cout << "Could open " << argv[2] << " for reading!" << std::endl;
+		std::cout << "Could open " << inFilename << " for reading!" << std::endl;
 		return 2;
 	}
 
@@ -103,7 +113,7 @@ int main(const int argc, char *argv[])
 	};
 	DeviceType sourceDeviceType = DeviceType::Undetermined;
 
-	std::vector<uint8_t> memory(0x1'000'000);
+	std::vector<uint8_t> memory(0x1'800'000);  // enough to address JD-990 card setup
 	std::vector<uint8_t> message;
 
 	while (!inFile.eof())
@@ -138,7 +148,7 @@ int main(const int argc, char *argv[])
 		{
 			if(sourceDeviceType == DeviceType::JD990)
 			{
-				std::cout << "WARNING: File contains mixed JD-800 and JD-990 dumps. Only JD-990 dumps will be procssed." << std::endl;
+				std::cout << "WARNING: File contains mixed JD-800 and JD-990 dumps. Only JD-990 dumps will be processed." << std::endl;
 				ReadUntilEOX(inFile);
 				continue;
 			}
@@ -148,7 +158,7 @@ int main(const int argc, char *argv[])
 		{
 			if (sourceDeviceType == DeviceType::JD800)
 			{
-				std::cout << "WARNING: File contains mixed JD-800 and JD-990 dumps. Only JD-800 dumps will be procssed." << std::endl;
+				std::cout << "WARNING: File contains mixed JD-800 and JD-990 dumps. Only JD-800 dumps will be processed." << std::endl;
 				ReadUntilEOX(inFile);
 				continue;
 			}
@@ -208,7 +218,7 @@ int main(const int argc, char *argv[])
 
 	if(verb == "convert")
 	{
-		std::string outFilename = argv[2];
+		std::string outFilename = inFilename;
 		if (sourceDeviceType == DeviceType::JD800)
 		{
 			outFilename += ".jd990.syx";

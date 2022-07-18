@@ -1,4 +1,4 @@
-// JDTools - Patch conversion tools for Roland JD-800 / JD-990
+// JDTools - Patch conversion utility for Roland JD-800 / JD-990
 // 2022 by Johannes Schultz
 // License: BSD 3-clause
 

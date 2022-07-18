@@ -1,4 +1,4 @@
-// JDTools - Patch conversion tools for Roland JD-800 / JD-990
+// JDTools - Patch conversion utility for Roland JD-800 / JD-990
 // 2022 by Johannes Schultz
 // License: BSD 3-clause
 
@@ -7,38 +7,51 @@
 
 #include <iostream>
 
-static void ConvertToneControl(const uint8_t source, const uint8_t dest, const uint8_t depth, Patch800 &p800, Tone800 &t800)
+static void ConvertToneControl(const uint8_t source, const uint8_t dest, uint8_t depth, Patch800 &p800, Tone800 &t800)
 {
 	if (source == 0 && dest == 4)
 	{
-		if(depth >= 50)
-			t800.wg.leverSens = 50 + (depth - 50);
-		else
+		// Mod Wheel to Pitch via LFO 1
+		if(depth < 50)
+		{
 			std::cerr << "LOSSY CONVERSION! Mod Wheel to LFO1 mod matrix routing with negative modulation!" << std::endl;
+			depth = 100 - depth;
+		}
+		t800.wg.leverSens = 50 + (depth - 50);
 	}
 	else if (source == 0 && dest == 5)
 	{
-		if (depth >= 50)
-			t800.wg.leverSens = 50 - (depth - 50);
-		else
+		// Mod wheel to Pitch via LFO 2
+		if (depth < 50)
+		{
 			std::cerr << "LOSSY CONVERSION! Mod Wheel to LFO2 mod matrix routing with negative modulation!" << std::endl;
+			depth = 100 - depth;
+		}
+		t800.wg.leverSens = 50 - (depth - 50);
 	}
 	else if (source == 1 && dest == 4)
 	{
-		if (depth >= 50)
-			t800.wg.aTouchModSens = 50 + (depth - 50);
-		else
+		// Aftertouch to Pitch via LFO 1
+		if (depth < 50)
+		{
 			std::cerr << "LOSSY CONVERSION! Aftertouch to LFO1 mod matrix routing with negative modulation!" << std::endl;
+			depth = 100 - depth;
+		}
+		t800.wg.aTouchModSens = 50 + (depth - 50);
 	}
 	else if (source == 1 && dest == 5)
 	{
-		if (depth >= 50)
-			t800.wg.aTouchModSens = 50 - (depth - 50);
-		else
+		// Aftertouch to Pitch via LFO 2
+		if (depth < 50)
+		{
 			std::cerr << "LOSSY CONVERSION! Aftertouch to LFO2 mod matrix routing with negative modulation!" << std::endl;
+			depth = 100 - depth;
+		}
+		t800.wg.aTouchModSens = 50 - (depth - 50);
 	}
 	else if (source == 1 && dest == 0 && depth != 50)
 	{
+		// Aftertouch to Pitch
 		t800.wg.aTouchBend = 1;
 		if(depth == -36 + 50)
 			p800.common.aTouchBend = 0;
@@ -51,10 +64,12 @@ static void ConvertToneControl(const uint8_t source, const uint8_t dest, const u
 	}
 	else if (source == 1 && dest == 1)
 	{
+		// Aftertouch to TVF
 		t800.tvf.aTouchSens = depth;
 	}
 	else if (source == 1 && dest == 3)
 	{
+		// Aftertouch to TVA
 		t800.tva.aTouchSens = depth;
 	}
 	else if(depth != 50)
@@ -65,11 +80,6 @@ static void ConvertToneControl(const uint8_t source, const uint8_t dest, const u
 
 static void ConvertTone990To800(const Patch990 &p990, const Tone990 &t990, Patch800 &p800, Tone800 &t800)
 {
-	if (p990.structureType.structureAB != 0)
-		std::cerr << "LOSSY CONVERSION! JD-990 patch AB has unsupported structure type: " << int(p990.structureType.structureAB) << std::endl;
-	if (p990.structureType.structureCD != 0)
-		std::cerr << "LOSSY CONVERSION! JD-990 patch CD has unsupported structure type: " << int(p990.structureType.structureCD) << std::endl;
-
 	if (p990.velocity.velocityRange1 != 0)
 		std::cerr << "LOSSY CONVERSION! JD-990 patch velocity range 1 is enabled: " << int(p990.velocity.velocityRange1) << std::endl;
 	if (p990.velocity.velocityRange2 != 0)
@@ -82,7 +92,7 @@ static void ConvertTone990To800(const Patch990 &p990, const Tone990 &t990, Patch
 	t800.common.velocityCurve = t990.common.velocityCurve;
 	t800.common.holdControl = t990.common.holdControl;
 
-	static constexpr uint8_t LfoWaveform990to800[] = { 0, 0x7F, 1, 2, 0x7F, 3, 4, 0x7F };
+	static constexpr uint8_t LfoWaveform990to800[] = { 0, 0 | 0x80, 1, 2, 2 | 0x80, 3, 4, 4 | 0x80 };
 
 	t800.lfo1.rate = t990.lfo1.rate;
 	t800.lfo1.delay = t990.lfo1.delay;
@@ -90,9 +100,9 @@ static void ConvertTone990To800(const Patch990 &p990, const Tone990 &t990, Patch
 	t800.lfo1.waveform = LfoWaveform990to800[t990.lfo1.waveform % std::size(LfoWaveform990to800)];
 	t800.lfo1.offset = t990.lfo1.offset;
 	t800.lfo1.keyTrigger = t990.lfo1.keyTrigger;
-	if (t800.lfo1.waveform == 0x7F)
+	if (t800.lfo1.waveform & 0x80)
 	{
-		t800.lfo1.waveform = 0;
+		t800.lfo1.waveform &= 0x7F;
 		std::cerr << "LOSSY CONVERSION! JD-990 tone LFO1 has unsupported LFO waveform: " << int(t990.lfo1.waveform) << std::endl;
 	}
 
@@ -102,9 +112,9 @@ static void ConvertTone990To800(const Patch990 &p990, const Tone990 &t990, Patch
 	t800.lfo2.waveform = LfoWaveform990to800[t990.lfo2.waveform % std::size(LfoWaveform990to800)];
 	t800.lfo2.offset = t990.lfo2.offset;
 	t800.lfo2.keyTrigger = t990.lfo2.keyTrigger;
-	if (t800.lfo2.waveform == 0x7F)
+	if (t800.lfo2.waveform & 0x80)
 	{
-		t800.lfo2.waveform = 0;
+		t800.lfo2.waveform &= 0x7F;
 		std::cerr << "LOSSY CONVERSION! JD-990 tone LFO2 has unsupported LFO waveform: " << int(t990.lfo2.waveform) << std::endl;
 	}
 
@@ -119,6 +129,10 @@ static void ConvertTone990To800(const Patch990 &p990, const Tone990 &t990, Patch
 	t800.wg.aTouchBend = 0;  // Will be populated by tone control conversion
 	t800.wg.lfo1Sens = t990.lfo1.depthPitch;
 	t800.wg.lfo2Sens = t990.lfo2.depthPitch;
+	if (t990.wg.waveSource == 0 && t990.wg.waveformMSB > 1)
+		t800.wg.waveformMSB = 0;  // This makes sense neither with the JD-880 nor the JD-990 but was found in TECHNOJD.MID (conversion error?) - silently fix it
+	if (t990.wg.waveSource == 0 && (t800.wg.waveformMSB > 0 || t800.wg.waveformLSB > 107))
+		std::cerr << "LOSSY CONVERSION! JD-990 tone uses unsupported internal waveform: " << int((t990.wg.waveformMSB << 7) | t990.wg.waveformLSB) << std::endl;
 	if (t990.wg.fxmColor != 0 || t990.wg.fxmDepth != 0)
 		std::cerr << "LOSSY CONVERSION! JD-990 tone has FXM enabled!" << std::endl;
 	if (t990.wg.syncSlaveSwitch != 0)
@@ -148,8 +162,8 @@ static void ConvertTone990To800(const Patch990 &p990, const Tone990 &t990, Patch
 	{
 		t800.tvf.lfoSelect = 1;
 		t800.tvf.lfoDepth = t990.lfo2.depthTVF;
-		if(t990.lfo1.depthTVF != 50)
-			std::cerr << "LOSSY CONVERSION! JD-990 tone has both LFOs contorlling TVF!" << std::endl;
+		if (t990.lfo1.depthTVF != 50)
+			std::cerr << "LOSSY CONVERSION! JD-990 tone has both LFOs controlling TVF!" << std::endl;
 	}
 	else
 	{
@@ -179,7 +193,7 @@ static void ConvertTone990To800(const Patch990 &p990, const Tone990 &t990, Patch
 		t800.tva.lfoSelect = 1;
 		t800.tva.lfoDepth = t990.lfo2.depthTVA;
 		if (t990.lfo1.depthTVA != 50)
-			std::cerr << "LOSSY CONVERSION! JD-990 tone has both LFOs contorlling TVA!" << std::endl;
+			std::cerr << "LOSSY CONVERSION! JD-990 tone has both LFOs controlling TVA!" << std::endl;
 	}
 	else
 	{
@@ -227,6 +241,11 @@ static void ConvertTone990To800(const Patch990 &p990, const Tone990 &t990, Patch
 
 void ConvertPatch990To800(const Patch990 &p990, Patch800 &p800)
 {
+	if (p990.structureType.structureAB != 0)
+		std::cerr << "LOSSY CONVERSION! JD-990 patch tones AB have unsupported structure type: " << int(p990.structureType.structureAB) << std::endl;
+	if (p990.structureType.structureCD != 0)
+		std::cerr << "LOSSY CONVERSION! JD-990 patch tones CD have unsupported structure type: " << int(p990.structureType.structureCD) << std::endl;
+
 	p800.common.name = p990.common.name;
 	p800.common.patchLevel = p990.common.patchLevel;
 	p800.common.keyRangeLowA = p990.keyRanges.keyRangeLowA;
@@ -310,11 +329,11 @@ void ConvertPatch990To800(const Patch990 &p990, Patch800 &p800)
 	p800.effect.enhancerSens = p990.effect.enhancerSens;
 	p800.effect.enhancerMix = p990.effect.enhancerMix;
 
-	p800.effect.delayCenterTap = p990.effect.delayCenterTapLSB;
+	p800.effect.delayCenterTap = std::min(p990.effect.delayCenterTapLSB, uint8_t(0x7D));
 	p800.effect.delayCenterLevel = p990.effect.delayCenterLevel;
-	p800.effect.delayLeftTap = p990.effect.delayLeftTapLSB;
+	p800.effect.delayLeftTap = std::min(p990.effect.delayLeftTapLSB, uint8_t(0x7D));
 	p800.effect.delayLeftLevel = p990.effect.delayLeftLevel;
-	p800.effect.delayRightTap = p990.effect.delayRightTapLSB;
+	p800.effect.delayRightTap = std::min(p990.effect.delayRightTapLSB, uint8_t(0x7D));
 	p800.effect.delayRightLevel = p990.effect.delayRightLevel;
 	p800.effect.delayFeedback = p990.effect.delayFeedback;
 	if (p990.effect.delayCenterTapMSB != 0 || p990.effect.delayCenterTapLSB > 0x7D)

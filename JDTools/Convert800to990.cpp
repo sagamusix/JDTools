@@ -1,4 +1,4 @@
-// JDTools - Patch conversion tools for Roland JD-800 / JD-990
+// JDTools - Patch conversion utility for Roland JD-800 / JD-990
 // 2022 by Johannes Schultz
 // License: BSD 3-clause
 
@@ -55,8 +55,8 @@ static void ConvertTone800To990(const Patch800 &p800, const Tone800 &t800, Tone9
 	t990.tva.biasDirection = t800.tva.biasDirection;
 	t990.tva.biasPoint = t800.tva.biasPoint;
 	t990.tva.biasLevel = t800.tva.biasLevel;
-	t990.tva.pan = 50;          // 990 only, default = 50?
-	t990.tva.panKeyFollow = 7;  // 990 only, default = 7?
+	t990.tva.pan = 50;          // 990 only
+	t990.tva.panKeyFollow = 7;  // 990 only
 
 	t990.tvaEnv.velo = t800.tvaEnv.velo;
 	t990.tvaEnv.timeVelo = t800.tvaEnv.timeVelo;
@@ -94,37 +94,37 @@ static void ConvertTone800To990(const Patch800 &p800, const Tone800 &t800, Tone9
 	t990.lfo2.depthTVF = (t800.tvf.lfoSelect == 1) ? t800.tvf.lfoDepth : 50;
 	t990.lfo2.depthTVA = (t800.tva.lfoSelect == 1) ? t800.tva.lfoDepth : 50;
 
-	// mod wheel
-	t990.cs1.destination1 = t800.wg.leverSens < 50 ? 5 : 4;
+	// Mod Wheel
+	t990.cs1.destination1 = t800.wg.leverSens < 50 ? 5 : 4;  // Mod Wheel to Pitch via LFO
 	t990.cs1.depth1 = t800.wg.leverSens < 50 ? (100 - t800.wg.leverSens) : t800.wg.leverSens;
-	t990.cs1.destination2 = 1;  // unused
+	t990.cs1.destination2 = 6;  // unused
 	t990.cs1.depth2 = 50;
-	t990.cs1.destination3 = 2;  // unused
+	t990.cs1.destination3 = 8;  // unused
 	t990.cs1.depth3 = 50;
-	t990.cs1.destination4 = 3;  // unused
+	t990.cs1.destination4 = 10;  // unused
 	t990.cs1.depth4 = 50;
 
-	// aftertouch
-	// pitch, cutoff, res, level, p-lfo1, p-lfo2, f-lfo1, f-lfo2, a-lfo1, a-lfo2, lfo1-r, lfo2-r
-	t990.cs2.destination1 = t800.wg.aTouchModSens < 50 ? 5 : 4;
-	t990.cs2.depth1 = t800.wg.aTouchModSens < 50 ? (100 - t800.wg.aTouchModSens) : t800.wg.aTouchModSens;
-	t990.cs2.destination2 = 0;  // pitch
+	// Aftertouch
+	// Destinations: pitch, cutoff, res, level, p-lfo1, p-lfo2, f-lfo1, f-lfo2, a-lfo1, a-lfo2, lfo1-r, lfo2-r
+	t990.cs2.destination1 = 0;  // Aftertouch to Pitch
 	if (t800.wg.aTouchBend)
 	{
 		if (p800.common.aTouchBend == 0)
-			t990.cs2.depth2 = -36 + 50;
+			t990.cs2.depth1 = -36 + 50;
 		else if (p800.common.aTouchBend == 1)
-			t990.cs2.depth2 = -24 + 50;
+			t990.cs2.depth1 = -24 + 50;
 		else
-			t990.cs2.depth2 = -12 + 50 + (p800.common.aTouchBend - 2);
+			t990.cs2.depth1 = -12 + 50 + (p800.common.aTouchBend - 2);
 	}
 	else
 	{
-		t990.cs2.depth2 = 50;
+		t990.cs2.depth1 = 50;
 	}
-	t990.cs2.destination3 = 1;  // cutoff
+	t990.cs2.destination2 = t800.wg.aTouchModSens < 50 ? 5 : 4;  // Aftertouch to Pitch via LFO
+	t990.cs2.depth2 = t800.wg.aTouchModSens < 50 ? (100 - t800.wg.aTouchModSens) : t800.wg.aTouchModSens;
+	t990.cs2.destination3 = 1;  // Aftertouch to TVF
 	t990.cs2.depth3 = t800.tvf.aTouchSens;
-	t990.cs2.destination4 = 3;  // level
+	t990.cs2.destination4 = 3;  // Aftertouch to TVA
 	t990.cs2.depth4 = t800.tva.aTouchSens;
 }
 
@@ -132,9 +132,9 @@ void ConvertPatch800To990(const Patch800 &p800, Patch990 &p990)
 {
 	p990.common.name = p800.common.name;
 	p990.common.patchLevel = p800.common.patchLevel;
-	p990.common.patchPan = 50;      // 990 only, default = 50?
-	p990.common.analogFeel = 0;     // 990 only, default = 0?
-	p990.common.voicePriority = 0;  // 990 only, default = 0?
+	p990.common.patchPan = 50;      // 990 only
+	p990.common.analogFeel = 0;     // 990 only
+	p990.common.voicePriority = 0;  // 990 only
 	p990.common.bendRangeDown = p800.common.benderRangeDown;
 	p990.common.bendRangeUp = p800.common.benderRangeUp;
 	p990.common.toneControlSource1 = 0;
@@ -144,11 +144,11 @@ void ConvertPatch800To990(const Patch800 &p800, Patch990 &p990)
 
 	p990.keyEffects.portamentoSW = p800.common.portamentoSW;
 	p990.keyEffects.portamentoMode = p800.common.portamentoMode;
-	p990.keyEffects.portamentoType = 1;  // 990 only, default = 1?
+	p990.keyEffects.portamentoType = 1;  // 990 only
 	p990.keyEffects.portamentoTime = p800.common.portamentoTime;
 	p990.keyEffects.soloSW = p800.common.soloSW;
 	p990.keyEffects.soloLegato = p800.common.soloLegato;
-	p990.keyEffects.soloSyncMaster = 0;  // 990 only, default = ?
+	p990.keyEffects.soloSyncMaster = 0;  // 990 only
 
 	p990.eq.lowFreq = p800.eq.lowFreq;
 	p990.eq.lowGain = p800.eq.lowGain;

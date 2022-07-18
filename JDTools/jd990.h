@@ -1,4 +1,4 @@
-// JDTools - Patch conversion tools for Roland JD-800 / JD-990
+// JDTools - Patch conversion utility for Roland JD-800 / JD-990
 // 2022 by Johannes Schultz
 // License: BSD 3-clause
 
@@ -77,8 +77,8 @@ struct Tone990
 			biasDirection,
 			biasPoint,
 			biasLevel,
-			pan,           // 990 only, default = 50?
-			panKeyFollow;  // 990 only, default = 7?
+			pan,           // 990 only, default = 50
+			panKeyFollow;  // 990 only, default = 7
 	};
 
 	struct TVAEnv
@@ -150,9 +150,9 @@ struct Patch990
 		std::array<char, 16> name;
 		uint8_t
 			patchLevel,
-			patchPan,       // 990 only, default = 50?
-			analogFeel,     // 990 only, default = 0?
-			voicePriority,  // 990 only, default = 0?
+			patchPan,       // 990 only, default = 50
+			analogFeel,     // 990 only, default = 0
+			voicePriority,  // 990 only, default = 0
 			bendRangeDown,
 			bendRangeUp,
 			toneControlSource1,  // mod, after, exp, breath, p.bend, foot
@@ -166,11 +166,11 @@ struct Patch990
 		uint8_t
 			portamentoSW,
 			portamentoMode,
-			portamentoType,  // 990 only, default = 1?
+			portamentoType,  // 990 only, default = 1
 			portamentoTime,
 			soloSW,
 			soloLegato,
-			soloSyncMaster;  // 990 only?
+			soloSyncMaster;  // 990 only
 	};
 
 	struct EQ
@@ -273,7 +273,7 @@ struct Patch990
 			chorusLevel,
 
 			delayMode,          // 990 only
-			delayCenterTapMSB,  // 990 only (dely values above 0x7D cannot be represented)
+			delayCenterTapMSB,  // 990 only (delay values above 0x7D are not supported)
 			delayCenterTapLSB,
 			delayCenterLevel,
 			delayLeftTapMSB,  // 990 only
