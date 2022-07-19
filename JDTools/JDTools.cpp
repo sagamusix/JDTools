@@ -17,6 +17,34 @@
 namespace
 {
 	constexpr uint8_t SYSEX_DEVICE_ID = 0x10;
+	constexpr uint8_t UNDEFINED_MEMORY = 0xFE;
+
+	constexpr uint32_t BASE_ADDR_800_PATCH_TEMPORARY = (0x00 << 14);
+	constexpr uint32_t BASE_ADDR_800_SETUP_TEMPORARY = (0x01 << 14);
+	constexpr uint32_t BASE_ADDR_800_SYSTEM = (0x02 << 14);
+	constexpr uint32_t BASE_ADDR_800_PART = (0x03 << 14);
+	constexpr uint32_t BASE_ADDR_800_SETUP_INTERNAL = (0x04 << 14);
+	constexpr uint32_t BASE_ADDR_800_PATCH_INTERNAL = (0x05 << 14);
+	constexpr uint32_t BASE_ADDR_800_DISPLAY = (0x07 << 14);
+	
+	constexpr uint32_t BASE_ADDR_990_SYSTEM = (0x00 << 21);
+	constexpr uint32_t BASE_ADDR_990_PERFORMANCE_TEMPORARY = (0x01 << 21);
+	constexpr uint32_t BASE_ADDR_990_PERFORMANCE_PATCHES_TEMPORARY = (0x02 << 21);
+	constexpr uint32_t BASE_ADDR_990_PATCH_TEMPORARY = (0x03 << 21);
+	constexpr uint32_t BASE_ADDR_990_SETUP_TEMPORARY = (0x04 << 21);
+	constexpr uint32_t BASE_ADDR_990_PERFORMANCE_INTERNAL = (0x05 << 21);
+	constexpr uint32_t BASE_ADDR_990_PATCH_INTERNAL = (0x06 << 21);
+	constexpr uint32_t BASE_ADDR_990_SETUP_INTERNAL = (0x07 << 21);
+	constexpr uint32_t BASE_ADDR_990_SYSTEM_CARD = (0x08 << 21);
+	constexpr uint32_t BASE_ADDR_990_PERFORMANCE_CARD = (0x09 << 21);
+	constexpr uint32_t BASE_ADDR_990_PATCH_CARD = (0x0A << 21);
+	constexpr uint32_t BASE_ADDR_990_SETUP_CARD = (0x0B << 21);
+}
+
+template<size_t Size>
+static std::string_view toString(const std::array<char, Size>& arr)
+{
+	return std::string_view{ arr.data(), arr.size() };
 }
 
 static void PrintUsage()
@@ -113,7 +141,7 @@ int main(const int argc, char *argv[])
 	};
 	DeviceType sourceDeviceType = DeviceType::Undetermined;
 
-	std::vector<uint8_t> memory(0x1'800'000);  // enough to address JD-990 card setup
+	std::vector<uint8_t> memory(0x1'800'000, UNDEFINED_MEMORY);  // enough to address JD-990 card setup
 	std::vector<uint8_t> message;
 
 	while (!inFile.eof())
@@ -231,60 +259,158 @@ int main(const int argc, char *argv[])
 		}
 
 		std::ofstream outFile(outFilename, std::ios::trunc | std::ios::binary);
+		// Convert patches
 		for (uint32_t patch = 0; patch < 64; patch++)
 		{
-			const uint32_t address800 = (0x05 << 14) + ((patch * 0x03) << 7);
-			const uint32_t address990 = (0x06 << 21) + (patch << 14);
+			const uint32_t address800 = BASE_ADDR_800_PATCH_INTERNAL + ((patch * 0x03) << 7);
+			const uint32_t address990 = BASE_ADDR_990_PATCH_INTERNAL + (patch << 14);
 			if (sourceDeviceType == DeviceType::JD800)
 			{
+				if (memory[address800] == UNDEFINED_MEMORY)
+					continue;
 				const Patch800 &p800 = *reinterpret_cast<const Patch800 *>(memory.data() + address800);
 				Patch990 p990;
-				std::cout << "Converting I" << (patch / 8 + 1) << (patch % 8 + 1) << ": " << std::string_view(p800.common.name.data(), p800.common.name.size()) << std::endl;
+				std::cout << "Converting I" << (patch / 8 + 1) << (patch % 8 + 1) << ": " << toString(p800.common.name) << std::endl;
 				ConvertPatch800To990(p800, p990);
 				WriteSysEx(outFile, address990, true, reinterpret_cast<const uint8_t *>(&p990), sizeof(p990));
 			} else
 			{
+				if (memory[address990] == UNDEFINED_MEMORY)
+					continue;
 				const Patch990 &p990 = *reinterpret_cast<const Patch990 *>(memory.data() + address990);
 				Patch800 p800;
-				std::cout << "Converting I" << (patch / 8 + 1) << (patch % 8 + 1) << ": " << std::string_view(p990.common.name.data(), p990.common.name.size()) << std::endl;
+				std::cout << "Converting I" << (patch / 8 + 1) << (patch % 8 + 1) << ": " << toString(p990.common.name) << std::endl;
 				ConvertPatch990To800(p990, p800);
 				WriteSysEx(outFile, address800, false, reinterpret_cast<const uint8_t *>(&p800), sizeof(p800));
 			}
+		}
+		// Convert rhythm setup / special setup
+		const uint32_t address800 = BASE_ADDR_800_SETUP_INTERNAL;
+		const uint32_t address990 = BASE_ADDR_990_SETUP_INTERNAL;
+		if (sourceDeviceType == DeviceType::JD800 && memory[address800] != UNDEFINED_MEMORY)
+		{
+			const SpecialSetup800 &s800 = *reinterpret_cast<const SpecialSetup800 *>(memory.data() + address800);
+			SpecialSetup990 s990;
+			std::cout << "Converting special setup" << std::endl;
+			ConvertSetup800To990(s800, s990);
+			WriteSysEx(outFile, address990, true, reinterpret_cast<const uint8_t*>(&s990), sizeof(s990));
+		}
+		else if (sourceDeviceType == DeviceType::JD990 && memory[address990] != UNDEFINED_MEMORY)
+		{
+			const SpecialSetup990 &s990 = *reinterpret_cast<const SpecialSetup990 *>(memory.data() + address990);
+			SpecialSetup800 s800;
+			std::cout << "Converting special setup: " << toString(s990.common.name) << std::endl;
+			ConvertSetup990To800(s990, s800);
+			WriteSysEx(outFile, address800, false, reinterpret_cast<const uint8_t*>(&s800), sizeof(s800));
 		}
 	}
 	else if(verb == "list")
 	{
 		if (sourceDeviceType == DeviceType::JD800)
+		{
 			std::cout << "Format: JD-800" << std::endl;
+
+			if (memory[BASE_ADDR_800_SYSTEM] != UNDEFINED_MEMORY)
+				std::cout << "System data present" << std::endl;
+			if (memory[BASE_ADDR_800_PART] != UNDEFINED_MEMORY)
+				std::cout << "Part data present" << std::endl;
+			if (memory[BASE_ADDR_800_DISPLAY] != UNDEFINED_MEMORY)
+			{
+				std::cout << "Display data:" << std::endl;
+				const char* str = reinterpret_cast<const char*>(memory.data() + BASE_ADDR_800_DISPLAY);
+				std::cout << std::string_view{ str, str + 22 } << std::endl;
+				std::cout << std::string_view{ str + 22, str + 44 } << std::endl;
+			}
+		}
 		else
+		{
 			std::cout << "Format: JD-990" << std::endl;
+
+			if (memory[BASE_ADDR_990_SYSTEM] != UNDEFINED_MEMORY)
+				std::cout << "System data present" << std::endl;
+			if (memory[BASE_ADDR_990_PERFORMANCE_TEMPORARY] != UNDEFINED_MEMORY)
+				std::cout << "Performance data (temporary) present" << std::endl;
+			if (memory[BASE_ADDR_990_PERFORMANCE_PATCHES_TEMPORARY] != UNDEFINED_MEMORY)
+				std::cout << "Performance patch data (temporary) present" << std::endl;
+			if (memory[BASE_ADDR_990_PERFORMANCE_INTERNAL] != UNDEFINED_MEMORY)
+				std::cout << "Performance data (internal) present" << std::endl;
+			if (memory[BASE_ADDR_990_SYSTEM_CARD] != UNDEFINED_MEMORY)
+				std::cout << "Card system data present" << std::endl;
+			if (memory[BASE_ADDR_990_PERFORMANCE_CARD] != UNDEFINED_MEMORY)
+				std::cout << "Performance data (card) present" << std::endl;
+		}
 
 		for (uint32_t patch = 0; patch < 64; patch++)
 		{
-			const uint32_t address800 = (0x05 << 14) + ((patch * 0x03) << 7);
-			const uint32_t address990 = (0x06 << 21) + (patch << 14);
+			const uint32_t address800 = BASE_ADDR_800_PATCH_INTERNAL + ((patch * 0x03) << 7);
+			const uint32_t address990 = BASE_ADDR_990_PATCH_INTERNAL + (patch << 14);
 			if (sourceDeviceType == DeviceType::JD800)
 			{
+				if (memory[address800] == UNDEFINED_MEMORY)
+					continue;
 				const Patch800 &p800 = *reinterpret_cast<const Patch800 *>(memory.data() + address800);
-				std::cout << "I" << (patch / 8 + 1) << (patch % 8 + 1) << ": " << std::string_view(p800.common.name.data(), p800.common.name.size()) << std::endl;
+				std::cout << "I" << (patch / 8 + 1) << (patch % 8 + 1) << ": " << toString(p800.common.name) << std::endl;
 			}
 			else
 			{
+				if (memory[address990] == UNDEFINED_MEMORY)
+					continue;
 				const Patch990 &p990 = *reinterpret_cast<const Patch990 *>(memory.data() + address990);
-				std::cout << "I" << (patch / 8 + 1) << (patch % 8 + 1) << ": " << std::string_view(p990.common.name.data(), p990.common.name.size()) << std::endl;
+				std::cout << "I" << (patch / 8 + 1) << (patch % 8 + 1) << ": " << toString(p990.common.name) << std::endl;
+			}
+		}
+		for (uint32_t patch = 0; patch < 64; patch++)
+		{
+			const uint32_t addressCard990 = BASE_ADDR_990_PATCH_CARD + (patch << 14);
+			if (sourceDeviceType == DeviceType::JD990 && memory[addressCard990] != UNDEFINED_MEMORY)
+			{
+				const Patch990 &p990 = *reinterpret_cast<const Patch990*>(memory.data() + addressCard990);
+				std::cout << "C" << (patch / 8 + 1) << (patch % 8 + 1) << ": " << toString(p990.common.name) << std::endl;
+			}
+		}
+		if (sourceDeviceType == DeviceType::JD800 && memory[BASE_ADDR_800_PATCH_TEMPORARY] != UNDEFINED_MEMORY)
+		{
+			const Patch800 &p800 = *reinterpret_cast<const Patch800 *>(memory.data() + BASE_ADDR_800_PATCH_TEMPORARY);
+			std::cout << "Temporary patch: " << toString(p800.common.name) << std::endl;
+		}
+		else if (sourceDeviceType == DeviceType::JD990 && memory[BASE_ADDR_990_PATCH_TEMPORARY] != UNDEFINED_MEMORY)
+		{
+			const Patch990 &p990 = *reinterpret_cast<const Patch990 *>(memory.data() + BASE_ADDR_990_PATCH_TEMPORARY);
+			std::cout << "Temporary patch: " << toString(p990.common.name) << std::endl;
+		}
+
+		if (sourceDeviceType == DeviceType::JD800)
+		{
+			if (memory[BASE_ADDR_800_SETUP_INTERNAL] != UNDEFINED_MEMORY)
+			{
+				const SpecialSetup800 &s800 = *reinterpret_cast<const SpecialSetup800 *>(memory.data() + BASE_ADDR_800_SETUP_INTERNAL);
+				std::cout << "Special setup (internal): JD-800 Drum Set" << std::endl;
+			}
+			if (memory[BASE_ADDR_800_SETUP_TEMPORARY] != UNDEFINED_MEMORY)
+			{
+				const SpecialSetup800 &s800 = *reinterpret_cast<const SpecialSetup800 *>(memory.data() + BASE_ADDR_800_SETUP_TEMPORARY);
+				std::cout << "Special setup (temporary): JD-800 Drum Set" << std::endl;
+			}
+		}
+		else if (sourceDeviceType == DeviceType::JD990)
+		{
+			if (memory[BASE_ADDR_990_SETUP_INTERNAL] != UNDEFINED_MEMORY)
+			{
+				const SpecialSetup990 &s990 = *reinterpret_cast<const SpecialSetup990 *>(memory.data() + BASE_ADDR_990_SETUP_INTERNAL);
+				std::cout << "Special setup (internal): " << toString(s990.common.name) << std::endl;
+			}
+			if (memory[BASE_ADDR_990_SETUP_CARD] != UNDEFINED_MEMORY)
+			{
+				const SpecialSetup990 &s990 = *reinterpret_cast<const SpecialSetup990 *>(memory.data() + BASE_ADDR_990_SETUP_CARD);
+				std::cout << "Special setup (card): " << toString(s990.common.name) << std::endl;
+			}
+			if (memory[BASE_ADDR_990_SETUP_TEMPORARY] != UNDEFINED_MEMORY)
+			{
+				const SpecialSetup990 &s990 = *reinterpret_cast<const SpecialSetup990*>(memory.data() + BASE_ADDR_990_SETUP_TEMPORARY);
+				std::cout << "Special setup (temporary): " << toString(s990.common.name) << std::endl;
 			}
 		}
 	}
 
 	return 0;
 }
-
-/*
-                            JD-800      JD-990
-Patch Temporary Area        00 00 00
-Special Setup Temp Area     01 00 00
-System Area                 02 00 00
-Part Area                   03 00 00
-Special Setup Memory Area   04 00 00
-Patch Memory Area           05 00 00    06 00 00 00
-*/

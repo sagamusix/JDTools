@@ -5,7 +5,9 @@
 #include "jd800.h"
 #include "jd990.h"
 
-static void ConvertTone800To990(const Patch800 &p800, const Tone800 &t800, Tone990 &t990)
+#include <cstring>
+
+static void ConvertTone800To990(const uint8_t aTouchBend800, const Tone800 &t800, Tone990 &t990)
 {
 	t990.wg.waveSource = t800.wg.waveSource;
 	t990.wg.waveformMSB = t800.wg.waveformMSB;
@@ -109,12 +111,12 @@ static void ConvertTone800To990(const Patch800 &p800, const Tone800 &t800, Tone9
 	t990.cs2.destination1 = 0;  // Aftertouch to Pitch
 	if (t800.wg.aTouchBend)
 	{
-		if (p800.common.aTouchBend == 0)
+		if (aTouchBend800 == 0)
 			t990.cs2.depth1 = -36 + 50;
-		else if (p800.common.aTouchBend == 1)
+		else if (aTouchBend800 == 1)
 			t990.cs2.depth1 = -24 + 50;
 		else
-			t990.cs2.depth1 = -12 + 50 + (p800.common.aTouchBend - 2);
+			t990.cs2.depth1 = -12 + 50 + (aTouchBend800 - 2);
 	}
 	else
 	{
@@ -250,8 +252,74 @@ void ConvertPatch800To990(const Patch800 &p800, Patch990 &p990)
 
 	p990.octaveSwitch = 1;
 
-	ConvertTone800To990(p800, p800.toneA, p990.toneA);
-	ConvertTone800To990(p800, p800.toneB, p990.toneB);
-	ConvertTone800To990(p800, p800.toneC, p990.toneC);
-	ConvertTone800To990(p800, p800.toneD, p990.toneD);
+	ConvertTone800To990(p800.common.aTouchBend, p800.toneA, p990.toneA);
+	ConvertTone800To990(p800.common.aTouchBend, p800.toneB, p990.toneB);
+	ConvertTone800To990(p800.common.aTouchBend, p800.toneC, p990.toneC);
+	ConvertTone800To990(p800.common.aTouchBend, p800.toneD, p990.toneD);
+}
+
+void ConvertSetup800To990(const SpecialSetup800 &s800, SpecialSetup990 &s990)
+{
+	std::memcpy(s990.common.name.data(), "JD-800 Drum Set ", s990.common.name.size());
+	s990.common.level = 80;
+	s990.common.pan = 50;
+	s990.common.analogFeel = 0;
+	s990.common.benderRangeDown = s800.common.benderRangeDown;
+	s990.common.benderRangeUp = s800.common.benderRangeUp;
+	s990.common.toneControlSource1 = 0;
+	s990.common.toneControlSource2 = 1;
+
+	s990.eq.lowFreq = s800.eq.lowFreq;
+	s990.eq.lowGain = s800.eq.lowGain;
+	s990.eq.midFreq = s800.eq.midFreq;
+	s990.eq.midQ = s800.eq.midQ;
+	s990.eq.midGain = s800.eq.midGain;
+	s990.eq.highFreq = s800.eq.highFreq;
+	s990.eq.highGain = s800.eq.highGain;
+
+	s990.effect.controlSource1 = 0;
+	s990.effect.controlDest1 = 0;
+	s990.effect.controlDepth1 = 50;
+	s990.effect.controlSource2 = 0;
+	s990.effect.controlDest2 = 0;
+	s990.effect.controlDepth2 = 50;
+
+	s990.effect.chorusRate = 9;
+	s990.effect.chorusDepth = 15;
+	s990.effect.chorusDelayTime = 0;
+	s990.effect.chorusFeedback = 49;
+	s990.effect.chorusLevel = 100;
+
+	s990.effect.delayMode = 0;
+	s990.effect.delayCenterTapMSB = 0;
+	s990.effect.delayCenterTapLSB = 110;
+	s990.effect.delayCenterLevel = 0;
+	s990.effect.delayLeftTapMSB = 0;
+	s990.effect.delayLeftTapLSB = 110;
+	s990.effect.delayLeftLevel = 40;
+	s990.effect.delayRightTapMSB = 0;
+	s990.effect.delayRightTapLSB = 125;
+	s990.effect.delayRightLevel = 40;
+	s990.effect.delayFeedback = 40;
+
+	s990.effect.reverbType = 4;
+	s990.effect.reverbPreDelay = 0;
+	s990.effect.reveryEarlyRefLevel = 8;
+	s990.effect.reverbHFDamp = 13;
+	s990.effect.reverbTime = 44;
+	s990.effect.reverbLevel = 40;
+
+	for (size_t i = 0; i < s990.keys.size(); i++)
+	{
+		const auto &k800 = s800.keys[i];
+		auto &k990 = s990.keys[i];
+		k990.name = k800.name;
+		k990.envMode = k800.envMode;
+		k990.muteGroup = k800.muteGroup;
+		k990.effectMode = k800.effectMode;
+		k990.effectLevel = k800.effectLevel;
+		
+		ConvertTone800To990(s800.common.aTouchBendSens, k800.tone, k990.tone);
+		k990.tone.tva.pan = (k800.pan * 5u + 1u) / 3u;
+	}
 }

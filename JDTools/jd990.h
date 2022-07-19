@@ -372,11 +372,11 @@ struct SpecialSetup990
 
 	struct Key
 	{
-		std::array<uint8_t, 10> name;
+		std::array<char, 10> name;
 		uint8_t
 			envMode,
 			muteGroup,  // 00-1A instead of 00-08!
-			effectMode,  // different
+			effectMode,
 			effectLevel;
 		Tone990 tone;
 	};

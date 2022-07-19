@@ -5,9 +5,10 @@
 #include "jd800.h"
 #include "jd990.h"
 
+#include <algorithm>
 #include <iostream>
 
-static void ConvertToneControl(const uint8_t source, const uint8_t dest, uint8_t depth, Patch800 &p800, Tone800 &t800)
+static void ConvertToneControl(const uint8_t source, const uint8_t dest, uint8_t depth, uint8_t &aTouchBend800, Tone800 &t800)
 {
 	if (source == 0 && dest == 4)
 	{
@@ -54,11 +55,11 @@ static void ConvertToneControl(const uint8_t source, const uint8_t dest, uint8_t
 		// Aftertouch to Pitch
 		t800.wg.aTouchBend = 1;
 		if(depth == -36 + 50)
-			p800.common.aTouchBend = 0;
+			aTouchBend800 = 0;
 		else if (depth == -24 + 50)
-			p800.common.aTouchBend = 1;
+			aTouchBend800 = 1;
 		else if (depth >= -12 + 50 && depth <= 12 + 50)
-			p800.common.aTouchBend = depth - (-12 + 50) + 2;
+			aTouchBend800 = depth - (-12 + 50) + 2;
 		else
 			std::cerr << "LOSSY CONVERSION! Aftertouch to pitch bend modulation has incompatible value:" << int(depth) << std::endl;
 	}
@@ -78,17 +79,8 @@ static void ConvertToneControl(const uint8_t source, const uint8_t dest, uint8_t
 	}
 }
 
-static void ConvertTone990To800(const Patch990 &p990, const Tone990 &t990, Patch800 &p800, Tone800 &t800)
+static void ConvertTone990To800(const uint8_t toneControlSource1, const uint8_t toneControlSource2, const Tone990 &t990, uint8_t &aTouchBend800, Tone800 &t800, const bool isSetupConversion)
 {
-	if (p990.velocity.velocityRange1 != 0)
-		std::cerr << "LOSSY CONVERSION! JD-990 patch velocity range 1 is enabled: " << int(p990.velocity.velocityRange1) << std::endl;
-	if (p990.velocity.velocityRange2 != 0)
-		std::cerr << "LOSSY CONVERSION! JD-990 patch velocity range 2 is enabled: " << int(p990.velocity.velocityRange2) << std::endl;
-	if (p990.velocity.velocityRange3 != 0)
-		std::cerr << "LOSSY CONVERSION! JD-990 patch velocity range 3 is enabled: " << int(p990.velocity.velocityRange3) << std::endl;
-	if (p990.velocity.velocityRange4 != 0)
-		std::cerr << "LOSSY CONVERSION! JD-990 patch velocity range 4 is enabled: " << int(p990.velocity.velocityRange4) << std::endl;
-
 	t800.common.velocityCurve = t990.common.velocityCurve;
 	t800.common.holdControl = t990.common.holdControl;
 
@@ -200,7 +192,7 @@ static void ConvertTone990To800(const Patch990 &p990, const Tone990 &t990, Patch
 		t800.tva.lfoSelect = 0;
 		t800.tva.lfoDepth = t990.lfo1.depthTVA;
 	}
-	if (t990.tva.pan != 50)
+	if (t990.tva.pan != 50 && !isSetupConversion)
 	{
 		std::cerr << "LOSSY CONVERSION! JD-990 tone has pan position != 50: " << int(t990.tva.pan) << std::endl;
 	}
@@ -220,23 +212,23 @@ static void ConvertTone990To800(const Patch990 &p990, const Tone990 &t990, Patch
 	t800.tvaEnv.sustainLevel = t990.tvaEnv.sustainLevel;
 	t800.tvaEnv.time4 = t990.tvaEnv.time4;
 
-	if (p990.common.toneControlSource1 > 1)
+	if (toneControlSource1 > 1)
 	{
-		std::cerr << "LOSSY CONVERSION! JD-990 patch uses tone control source 1 other than mod wheel or aftertouch: " << int(p990.common.toneControlSource1) << std::endl;
+		std::cerr << "LOSSY CONVERSION! JD-990 patch uses tone control source 1 other than mod wheel or aftertouch: " << int(toneControlSource1) << std::endl;
 	}
-	if (p990.common.toneControlSource2 > 1)
+	if (toneControlSource2 > 1)
 	{
-		std::cerr << "LOSSY CONVERSION! JD-990 patch uses tone control source 2 other than mod wheel or aftertouch: " << int(p990.common.toneControlSource1) << std::endl;
+		std::cerr << "LOSSY CONVERSION! JD-990 patch uses tone control source 2 other than mod wheel or aftertouch: " << int(toneControlSource1) << std::endl;
 	}
 
-	ConvertToneControl(p990.common.toneControlSource1, t990.cs1.destination1, t990.cs1.depth1, p800, t800);
-	ConvertToneControl(p990.common.toneControlSource1, t990.cs1.destination2, t990.cs1.depth2, p800, t800);
-	ConvertToneControl(p990.common.toneControlSource1, t990.cs1.destination3, t990.cs1.depth3, p800, t800);
-	ConvertToneControl(p990.common.toneControlSource1, t990.cs1.destination4, t990.cs1.depth4, p800, t800);
-	ConvertToneControl(p990.common.toneControlSource2, t990.cs2.destination1, t990.cs2.depth1, p800, t800);
-	ConvertToneControl(p990.common.toneControlSource2, t990.cs2.destination2, t990.cs2.depth2, p800, t800);
-	ConvertToneControl(p990.common.toneControlSource2, t990.cs2.destination3, t990.cs2.depth3, p800, t800);
-	ConvertToneControl(p990.common.toneControlSource2, t990.cs2.destination4, t990.cs2.depth4, p800, t800);
+	ConvertToneControl(toneControlSource1, t990.cs1.destination1, t990.cs1.depth1, aTouchBend800, t800);
+	ConvertToneControl(toneControlSource1, t990.cs1.destination2, t990.cs1.depth2, aTouchBend800, t800);
+	ConvertToneControl(toneControlSource1, t990.cs1.destination3, t990.cs1.depth3, aTouchBend800, t800);
+	ConvertToneControl(toneControlSource1, t990.cs1.destination4, t990.cs1.depth4, aTouchBend800, t800);
+	ConvertToneControl(toneControlSource2, t990.cs2.destination1, t990.cs2.depth1, aTouchBend800, t800);
+	ConvertToneControl(toneControlSource2, t990.cs2.destination2, t990.cs2.depth2, aTouchBend800, t800);
+	ConvertToneControl(toneControlSource2, t990.cs2.destination3, t990.cs2.depth3, aTouchBend800, t800);
+	ConvertToneControl(toneControlSource2, t990.cs2.destination4, t990.cs2.depth4, aTouchBend800, t800);
 }
 
 void ConvertPatch990To800(const Patch990 &p990, Patch800 &p800)
@@ -245,6 +237,15 @@ void ConvertPatch990To800(const Patch990 &p990, Patch800 &p800)
 		std::cerr << "LOSSY CONVERSION! JD-990 patch tones AB have unsupported structure type: " << int(p990.structureType.structureAB) << std::endl;
 	if (p990.structureType.structureCD != 0)
 		std::cerr << "LOSSY CONVERSION! JD-990 patch tones CD have unsupported structure type: " << int(p990.structureType.structureCD) << std::endl;
+
+	if (p990.velocity.velocityRange1 != 0)
+		std::cerr << "LOSSY CONVERSION! JD-990 patch velocity range 1 is enabled: " << int(p990.velocity.velocityRange1) << std::endl;
+	if (p990.velocity.velocityRange2 != 0)
+		std::cerr << "LOSSY CONVERSION! JD-990 patch velocity range 2 is enabled: " << int(p990.velocity.velocityRange2) << std::endl;
+	if (p990.velocity.velocityRange3 != 0)
+		std::cerr << "LOSSY CONVERSION! JD-990 patch velocity range 3 is enabled: " << int(p990.velocity.velocityRange3) << std::endl;
+	if (p990.velocity.velocityRange4 != 0)
+		std::cerr << "LOSSY CONVERSION! JD-990 patch velocity range 4 is enabled: " << int(p990.velocity.velocityRange4) << std::endl;
 
 	p800.common.name = p990.common.name;
 	p800.common.patchLevel = p990.common.patchLevel;
@@ -359,8 +360,57 @@ void ConvertPatch990To800(const Patch990 &p990, Patch800 &p800)
 	p800.effect.reverbLevel = p990.effect.reverbLevel;
 	p800.effect.dummy = 0;
 
-	ConvertTone990To800(p990, p990.toneA, p800, p800.toneA);
-	ConvertTone990To800(p990, p990.toneB, p800, p800.toneB);
-	ConvertTone990To800(p990, p990.toneC, p800, p800.toneC);
-	ConvertTone990To800(p990, p990.toneD, p800, p800.toneD);
+	ConvertTone990To800(p990.common.toneControlSource1, p990.common.toneControlSource2, p990.toneA, p800.common.aTouchBend, p800.toneA, false);
+	ConvertTone990To800(p990.common.toneControlSource1, p990.common.toneControlSource2, p990.toneB, p800.common.aTouchBend, p800.toneB, false);
+	ConvertTone990To800(p990.common.toneControlSource1, p990.common.toneControlSource2, p990.toneC, p800.common.aTouchBend, p800.toneC, false);
+	ConvertTone990To800(p990.common.toneControlSource1, p990.common.toneControlSource2, p990.toneD, p800.common.aTouchBend, p800.toneD, false);
+}
+
+void ConvertSetup990To800(const SpecialSetup990 &s990, SpecialSetup800 &s800)
+{
+	std::cerr << "(Setup name and effect settings cannot be converted)" << std::endl;
+
+	s800.eq.lowFreq = s990.eq.lowFreq;
+	s800.eq.lowGain = s990.eq.lowGain;
+	s800.eq.midFreq = s990.eq.midFreq;
+	s800.eq.midQ = s990.eq.midQ;
+	s800.eq.midGain = s990.eq.midGain;
+	s800.eq.highFreq = s990.eq.highFreq;
+	s800.eq.highGain = s990.eq.highGain;
+
+	s800.common.benderRangeDown = s990.common.benderRangeDown;
+	s800.common.benderRangeUp = s990.common.benderRangeUp;
+	s800.common.aTouchBendSens = 0;  // Will be populated by tone conversion
+
+	if(s990.common.level != 80)
+		std::cerr << "LOSSY CONVERSION! JD-990 setup has level != 80: " << int(s990.common.level) << std::endl;
+	if (s990.common.pan != 50)
+		std::cerr << "LOSSY CONVERSION! JD-990 setup has pan != 50: " << int(s990.common.pan) << std::endl;
+	if (s990.common.analogFeel != 0)
+		std::cerr << "LOSSY CONVERSION! JD-990 setup has analog feel != 0: " << int(s990.common.analogFeel) << std::endl;
+
+	for (size_t i = 0; i < s990.keys.size(); i++)
+	{
+		const auto &k990 = s990.keys[i];
+		auto &k800 = s800.keys[i];
+		k800.name = k990.name;
+		k800.muteGroup = k990.muteGroup;
+		if (k990.muteGroup > 8)
+		{
+			std::cerr << "LOSSY CONVERSION! JD-990 setup key " << i << " has unsupported mute group: " << int(k990.muteGroup) << std::endl;
+			k800.muteGroup = 0;
+		}
+		k800.envMode = k990.envMode;
+		k800.pan = (k990.tone.tva.pan * 3u + 2u) / 5u;
+		k800.effectMode = k990.effectMode;
+		if (k990.effectMode > 3)
+		{
+			std::cerr << "LOSSY CONVERSION! JD-990 setup key " << i << " has unsupported effect mode: " << int(k990.effectMode) << std::endl;
+			k800.effectMode = 0;
+		}
+		k800.effectLevel = k990.effectLevel;
+		k800.dummy = 0;
+		
+		ConvertTone990To800(s990.common.toneControlSource1, s990.common.toneControlSource2, k990.tone, s800.common.aTouchBendSens, k800.tone, true);
+	}
 }
