@@ -11,6 +11,34 @@ Right now, the code can only handle SYX files (raw SysEx dumps) and convert from
 
 There's no plans for supporting the JD-08 or the JD-800 VST plugin at this point in time, as their binary exchange format differs greatly from the SysEx dump formats, and the JD-08's MIDI implementation is really minimal - sending a whole bank of patches via MIDI appears to be impossible.
 
+# Usage
+
+## Conversion
+
+Convert a JD-800 SysEx dump to JD-990 format - or vice versa! - by invoking `JDTools convert <input.syx> <output.syx>`. The input format (JD-800 or JD-990) is determined automatically from the SysEx contents.
+
+## Merging
+
+Merge any number of SysEx dumps containing temporary patches by invoking `JDTools merge <input1.syx> <input2.syx> <input3.syx> ... <output.syx>`. If an input file contains multiple dumps for the temporary patch area, they are all considered.
+
+The following batch script can be used to pass a directory name instead of a list of individual files:
+
+```
+@echo off
+REM Usage: merge.cmd Path\To\Directory output.syx 
+setlocal enabledelayedexpansion enableextensions
+set baseDir=%~1
+set LIST=
+for %%x in ("%baseDir%\*.syx") do set LIST=!LIST! "%%x"
+set LIST=%LIST:~1%
+
+JDTools merge %LIST% %2
+```
+
+## Listing
+
+List all the contents of a SysEx dump by invoking `JDTools list <input.syx>`. This also lists objects that JDTools cannot convert (such as the JD-800 display area), but the actual contents are not shown for most of them.
+
 # License
 
 JDTools is provided under the BSD 3-clause license. See [license.md](license.md) for details.

@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <fstream>
 #include <iostream>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -52,10 +53,16 @@ static void PrintUsage()
 	std::cout <<
 R"(JDTools - Patch conversion utility for Roland JD-800 / JD-990
 
-Usage: JDTools <verb> <filename.syx>
-Verbs:
-convert  -  Converts from JD-800 to JD-990 SysEx dump or vice versa
-list     -  Lists all SysEx contents
+Usage:
+
+JDTools convert <input.syx> <output.syx>
+Converts from JD-800 to JD-990 SysEx dump or vice versa
+
+JDTools merge <input1.syx> <input2.syx> <input3.syx> ... <output.syx>
+Merges files containing temporary patches into banks
+
+JDTools list <input.syx>
+Lists all SysEx contents
 )" << std::endl;
 }
 
@@ -103,12 +110,18 @@ static void WriteSysEx(std::ostream &f, uint32_t outAddress, const bool isJD990,
 		size -= amountToCopy;
 		offset += amountToCopy;
 	}
-
 }
+
+template<typename T>
+static void WriteSysEx(std::ofstream &f, uint32_t outAddress, const bool isJD990, const T &object)
+{
+	WriteSysEx(f, outAddress, isJD990, reinterpret_cast<const uint8_t *>(&object), sizeof(object));
+}
+
 
 int main(const int argc, char *argv[])
 {
-	if (argc != 3)
+	if (argc < 3)
 	{
 		PrintUsage();
 		return 1;
@@ -119,18 +132,20 @@ int main(const int argc, char *argv[])
 	static_assert(sizeof(SpecialSetup990) == 6524);
 
 	const std::string_view verb = argv[1];
-	if (verb != "convert" && verb != "list")
+	int numInputFiles = 1;
+	if (verb != "convert" && verb != "list" && verb != "merge")
 	{
 		PrintUsage();
 		return 1;
 	}
-
-	const std::string inFilename = argv[2];
-	std::ifstream inFile(inFilename, std::ios::binary);
-	if (!inFile)
+	if ((verb == "convert" && argc != 4) || (verb == "list" && argc != 3) || (verb == "merge" && argc < 4))
 	{
-		std::cout << "Could open " << inFilename << " for reading!" << std::endl;
-		return 2;
+		PrintUsage();
+		return 1;
+	}
+	if (verb == "merge")
+	{
+		numInputFiles = argc - 3;
 	}
 
 	enum class DeviceType
@@ -142,122 +157,140 @@ int main(const int argc, char *argv[])
 	DeviceType sourceDeviceType = DeviceType::Undetermined;
 
 	std::vector<uint8_t> memory(0x1'800'000, UNDEFINED_MEMORY);  // enough to address JD-990 card setup
+	std::vector<Patch800> temporaryPatches800;
+	std::vector<Patch990> temporaryPatches990;
 	std::vector<uint8_t> message;
 
-	while (!inFile.eof())
+	for (int i = 0; i < numInputFiles; i++)
 	{
-		uint8_t ch = 0;
-		while (!inFile.eof() && ch != 0xF0)
+		const std::string inFilename = argv[2 + i];
+		std::ifstream inFile(inFilename, std::ios::binary);
+		if (!inFile)
 		{
-			ch = static_cast<uint8_t>(inFile.get());
-		}
-		if (inFile.eof())
-			break;
-
-		if (inFile.get() != 0x41)
-		{
-			std::cout << "Ignoring SysEx message: Not a Roland device" << std::endl;
-			ReadUntilEOX(inFile);
-			continue;
+			std::cout << "Could open " << inFilename << " for reading!" << std::endl;
+			return 2;
 		}
 
-		// Ignore device ID
-		ch = inFile.get();
-
-		ch = static_cast<uint8_t>(inFile.get());
-		if (ch != 0x3D && ch != 0x57)
+		while (!inFile.eof())
 		{
-			std::cout << "Ignoring SysEx message: Not a JD-800 or JD-990 message" << std::endl;
-			ReadUntilEOX(inFile);
-			continue;
-		}
-
-		if (ch == 0x3D)
-		{
-			if(sourceDeviceType == DeviceType::JD990)
+			uint8_t ch = 0;
+			while (!inFile.eof() && ch != 0xF0)
 			{
-				std::cout << "WARNING: File contains mixed JD-800 and JD-990 dumps. Only JD-990 dumps will be processed." << std::endl;
-				ReadUntilEOX(inFile);
-				continue;
+				ch = static_cast<uint8_t>(inFile.get());
 			}
-			sourceDeviceType = DeviceType::JD800;
-		}
-		else if (ch == 0x57)
-		{
-			if (sourceDeviceType == DeviceType::JD800)
-			{
-				std::cout << "WARNING: File contains mixed JD-800 and JD-990 dumps. Only JD-800 dumps will be processed." << std::endl;
-				ReadUntilEOX(inFile);
-				continue;
-			}
-			sourceDeviceType = DeviceType::JD990;
-		}
-
-
-		ch = static_cast<uint8_t>(inFile.get());
-		if (ch != 0x12)
-		{
-			// TODO: for <list> verb, also show contents of other types
-			std::cout << "Ignoring SysEx message: Not a Data Set message" << std::endl;
-			ReadUntilEOX(inFile);
-			continue;
-		}
-
-		message.clear();
-		uint8_t checksum = 0;
-		while (!inFile.eof() && ch != 0xF7)
-		{
-			ch = static_cast<uint8_t>(inFile.get());
-			if (ch == 0xF7)
+			if (inFile.eof())
 				break;
-			checksum += ch;
-			message.push_back(ch);
+
+			if (inFile.get() != 0x41)
+			{
+				std::cout << "Ignoring SysEx message: Not a Roland device" << std::endl;
+				ReadUntilEOX(inFile);
+				continue;
+			}
+
+			// Ignore device ID
+			ch = inFile.get();
+
+			ch = static_cast<uint8_t>(inFile.get());
+			if (ch != 0x3D && ch != 0x57)
+			{
+				std::cout << "Ignoring SysEx message: Not a JD-800 or JD-990 message" << std::endl;
+				ReadUntilEOX(inFile);
+				continue;
+			}
+
+			if (ch == 0x3D)
+			{
+				if (sourceDeviceType == DeviceType::JD990)
+				{
+					std::cout << "WARNING: File contains mixed JD-800 and JD-990 dumps. Only JD-990 dumps will be processed." << std::endl;
+					ReadUntilEOX(inFile);
+					continue;
+				}
+				sourceDeviceType = DeviceType::JD800;
+			}
+			else if (ch == 0x57)
+			{
+				if (sourceDeviceType == DeviceType::JD800)
+				{
+					std::cout << "WARNING: File contains mixed JD-800 and JD-990 dumps. Only JD-800 dumps will be processed." << std::endl;
+					ReadUntilEOX(inFile);
+					continue;
+				}
+				sourceDeviceType = DeviceType::JD990;
+			}
+
+
+			ch = static_cast<uint8_t>(inFile.get());
+			if (ch != 0x12)
+			{
+				// TODO: for <list> verb, also show contents of other types
+				std::cout << "Ignoring SysEx message: Not a Data Set message" << std::endl;
+				ReadUntilEOX(inFile);
+				continue;
+			}
+
+			message.clear();
+			uint8_t checksum = 0;
+			while (!inFile.eof() && ch != 0xF7)
+			{
+				ch = static_cast<uint8_t>(inFile.get());
+				if (ch == 0xF7)
+					break;
+				checksum += ch;
+				message.push_back(ch);
+			}
+			checksum = (~checksum + 1) & 0x7F;
+			if (checksum != 0)
+			{
+				std::cerr << "Invalid SysEx checksum!" << std::endl;
+				return 3;
+			}
+
+			if ((message.size() < 4 && sourceDeviceType == DeviceType::JD800) || (message.size() < 5 && sourceDeviceType == DeviceType::JD990))
+			{
+				std::cerr << "WARNING! Skipping SysEx, too short!" << std::endl;
+				continue;
+			}
+
+			// Remove checksum byte
+			message.pop_back();
+
+			uint32_t address = 0;
+			if (sourceDeviceType == DeviceType::JD800)
+				address = (message[0] << 14) | (message[1] << 7) | message[2];
+			else
+				address = (message[0] << 21) | (message[1] << 14) | (message[2] << 7) | message[3];
+
+			if (address + message.size() > memory.size())
+			{
+				std::cerr << "WARNING! Too large address, ignoring SysEx message!" << std::endl;
+				continue;
+			}
+
+			std::copy(message.begin() + ((sourceDeviceType == DeviceType::JD800) ? 3 : 4), message.end(), memory.begin() + address);
+
+			if (sourceDeviceType == DeviceType::JD800 && address == BASE_ADDR_800_PATCH_TEMPORARY + 256)
+				temporaryPatches800.push_back(*reinterpret_cast<const Patch800 *>(memory.data() + BASE_ADDR_800_PATCH_TEMPORARY));
+			else if (sourceDeviceType == DeviceType::JD990 && address == BASE_ADDR_990_PATCH_TEMPORARY + 256)
+				temporaryPatches990.push_back(*reinterpret_cast<const Patch990 *>(memory.data() + BASE_ADDR_990_PATCH_TEMPORARY));
 		}
-		checksum = (~checksum + 1) & 0x7F;
-		if (checksum != 0)
-		{
-			std::cerr << "Invalid SysEx checksum!" << std::endl;
-			return 3;
-		}
+	}
 
-		if ((message.size() < 4 && sourceDeviceType == DeviceType::JD800) || (message.size() < 5 && sourceDeviceType == DeviceType::JD990))
-		{
-			std::cerr << "WARNING! Skipping SysEx, too short!" << std::endl;
-			continue;
-		}
-
-		// Remove checksum byte
-		message.pop_back();
-
-		uint32_t address = 0;
-		if (sourceDeviceType == DeviceType::JD800)
-			address = (message[0] << 14) | (message[1] << 7) | message[2];
-		else
-			address = (message[0] << 21) | (message[1] << 14) | (message[2] << 7) | message[3];
-
-		if(address + message.size() > memory.size())
-		{
-			std::cerr << "WARNING! Too large address, ignoring SysEx message!" << std::endl;
-			continue;
-		}
-
-		std::copy(message.begin() + ((sourceDeviceType == DeviceType::JD800) ? 3 : 4), message.end(), memory.begin() + address);
+	if (sourceDeviceType == DeviceType::Undetermined)
+	{
+		std::cout << "Input didn't contain any SysEx messages for either JD-800 or JD-990!" << std::endl;
+		return 2;
 	}
 
 	if(verb == "convert")
 	{
-		std::string outFilename = inFilename;
 		if (sourceDeviceType == DeviceType::JD800)
-		{
-			outFilename += ".jd990.syx";
 			std::cout << "Converting JD-800 patch format to JD-990..." << std::endl;
-		}
 		else
-		{
-			outFilename += ".jd800.syx";
 			std::cout << "Converting JD-990 patch format to JD-800..." << std::endl;
-		}
 
+		std::string outFilename = argv[3];
 		std::ofstream outFile(outFilename, std::ios::trunc | std::ios::binary);
 		// Convert patches
 		for (uint32_t patch = 0; patch < 64; patch++)
@@ -272,7 +305,7 @@ int main(const int argc, char *argv[])
 				Patch990 p990;
 				std::cout << "Converting I" << (patch / 8 + 1) << (patch % 8 + 1) << ": " << toString(p800.common.name) << std::endl;
 				ConvertPatch800To990(p800, p990);
-				WriteSysEx(outFile, address990, true, reinterpret_cast<const uint8_t *>(&p990), sizeof(p990));
+				WriteSysEx(outFile, address990, true, p990);
 			} else
 			{
 				if (memory[address990] == UNDEFINED_MEMORY)
@@ -281,7 +314,7 @@ int main(const int argc, char *argv[])
 				Patch800 p800;
 				std::cout << "Converting I" << (patch / 8 + 1) << (patch % 8 + 1) << ": " << toString(p990.common.name) << std::endl;
 				ConvertPatch990To800(p990, p800);
-				WriteSysEx(outFile, address800, false, reinterpret_cast<const uint8_t *>(&p800), sizeof(p800));
+				WriteSysEx(outFile, address800, false, p800);
 			}
 		}
 		// Convert rhythm setup / special setup
@@ -293,7 +326,7 @@ int main(const int argc, char *argv[])
 			SpecialSetup990 s990;
 			std::cout << "Converting special setup" << std::endl;
 			ConvertSetup800To990(s800, s990);
-			WriteSysEx(outFile, address990, true, reinterpret_cast<const uint8_t*>(&s990), sizeof(s990));
+			WriteSysEx(outFile, address990, true, s990);
 		}
 		else if (sourceDeviceType == DeviceType::JD990 && memory[address990] != UNDEFINED_MEMORY)
 		{
@@ -301,8 +334,53 @@ int main(const int argc, char *argv[])
 			SpecialSetup800 s800;
 			std::cout << "Converting special setup: " << toString(s990.common.name) << std::endl;
 			ConvertSetup990To800(s990, s800);
-			WriteSysEx(outFile, address800, false, reinterpret_cast<const uint8_t*>(&s800), sizeof(s800));
+			WriteSysEx(outFile, address800, false, s800);
 		}
+	}
+	else if (verb == "merge")
+	{
+		if (sourceDeviceType == DeviceType::JD800)
+			std::cout << "Merging " << temporaryPatches800.size() << " JD-800 patches..." << std::endl;
+		else
+			std::cout << "Merging " << temporaryPatches990.size() << " JD-990 patches..." << std::endl;
+
+		const size_t numPatches = ((sourceDeviceType == DeviceType::JD800) ? temporaryPatches800.size() : temporaryPatches990.size());
+		const size_t numBanks = (numPatches + 63) / 64;
+		size_t sourcePatch = 0;
+
+		for (size_t bank = 0; bank < numBanks; bank++)
+		{
+			std::string outFilename = argv[2 + numInputFiles];
+			if (numBanks > 1)
+			{
+				if (outFilename.ends_with(".syx") || outFilename.ends_with(".SYX"))
+					outFilename = outFilename.substr(0, outFilename.size() - 3) + std::to_string(bank + 1) + outFilename.substr(outFilename.size() - 4);
+				else
+					outFilename += "." + std::to_string(bank + 1);
+			}
+
+			std::ofstream outFile(outFilename, std::ios::trunc | std::ios::binary);
+
+			for (size_t destPatch = 0; destPatch < 64; destPatch++, sourcePatch++)
+			{
+				if(sourcePatch >= numPatches)
+					break;
+
+				if (sourceDeviceType == DeviceType::JD800)
+				{
+					const uint32_t address800 = BASE_ADDR_800_PATCH_INTERNAL + ((destPatch * 0x03) << 7);
+					std::cout << "Adding I" << (destPatch / 8 + 1) << (destPatch % 8 + 1) << ": " << toString(temporaryPatches800[sourcePatch].common.name) << std::endl;
+					WriteSysEx(outFile, address800, false, temporaryPatches800[sourcePatch]);
+				}
+				else if (sourceDeviceType == DeviceType::JD990)
+				{
+					const uint32_t address990 = BASE_ADDR_990_PATCH_INTERNAL + (destPatch << 14);
+					std::cout << "Adding I" << (destPatch / 8 + 1) << (destPatch % 8 + 1) << ": " << toString(temporaryPatches990[sourcePatch].common.name) << std::endl;
+					WriteSysEx(outFile, address990, true, temporaryPatches990[sourcePatch]);
+				}
+			}
+		}
+
 	}
 	else if(verb == "list")
 	{
