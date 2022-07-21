@@ -291,7 +291,7 @@ void ConvertPatch990To800(const Patch990 &p990, Patch800 &p800)
 
 	p800.midiTx.keyMode = 0;
 	p800.midiTx.splitPoint = 36;
-	p800.midiTx.lowerChannel = 0;
+	p800.midiTx.lowerChannel = 1;
 	p800.midiTx.upperChannel = 0;
 	p800.midiTx.lowerProgramChange = 0;
 	p800.midiTx.upperProgramChange = 0;
