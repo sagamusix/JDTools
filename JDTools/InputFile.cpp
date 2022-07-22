@@ -1,3 +1,7 @@
+// JDTools - Patch conversion utility for Roland JD-800 / JD-990
+// 2022 by Johannes Schultz
+// License: BSD 3-clause
+
 #include "InputFile.h"
 
 InputFile::InputFile(std::istream &file)
