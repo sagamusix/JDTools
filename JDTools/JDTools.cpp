@@ -333,6 +333,22 @@ int main(const int argc, char *argv[])
 			ConvertSetup990To800(s990, s800);
 			WriteSysEx(outFile, address800, false, s800);
 		}
+
+		// Convert temporary patches
+		for (const auto &p800 : temporaryPatches800)
+		{
+			std::cout << "Converting temporary patch: " << toString(p800.common.name) << std::endl;
+			Patch990 p990;
+			ConvertPatch800To990(p800, p990);
+			WriteSysEx(outFile, BASE_ADDR_990_PATCH_TEMPORARY, true, p990);
+		}
+		for (const auto &p990 : temporaryPatches990)
+		{
+			std::cout << "Converting temporary patch: " << toString(p990.common.name) << std::endl;
+			Patch800 p800;
+			ConvertPatch990To800(p990, p800);
+			WriteSysEx(outFile, BASE_ADDR_800_PATCH_TEMPORARY, false, p800);
+		}
 	}
 	else if (verb == "merge")
 	{
