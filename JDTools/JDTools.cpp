@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "convert.h"
+#include "InputFile.h"
 
 #include "jd800.h"
 #include "jd990.h"
@@ -171,27 +172,26 @@ int main(const int argc, char *argv[])
 			return 2;
 		}
 
-		while (!inFile.eof())
+		InputFile inputFile{inFile};
+		do
 		{
-			uint8_t ch = 0;
-			while (!inFile.eof() && ch != 0xF0)
-			{
-				ch = static_cast<uint8_t>(inFile.get());
-			}
-			if (inFile.eof())
+			message = inputFile.NextSysExMessage();
+			if (message.empty())
 				break;
 
-			if (inFile.get() != 0x41)
+			if (message.size() < 6)
 			{
-				std::cout << "Ignoring SysEx message: Not a Roland device" << std::endl;
-				ReadUntilEOX(inFile);
+				std::cout << "Ignoring SysEx message: Too short" << std::endl;
 				continue;
 			}
 
-			// Ignore device ID
-			ch = inFile.get();
+			if (message[0] != 0x41)
+			{
+				std::cout << "Ignoring SysEx message: Not a Roland device" << std::endl;
+				continue;
+			}
 
-			ch = static_cast<uint8_t>(inFile.get());
+			uint8_t ch = message[2];
 			if (ch != 0x3D && ch != 0x57)
 			{
 				std::cout << "Ignoring SysEx message: Not a JD-800 or JD-990 message" << std::endl;
@@ -220,25 +220,21 @@ int main(const int argc, char *argv[])
 				sourceDeviceType = DeviceType::JD990;
 			}
 
-
-			ch = static_cast<uint8_t>(inFile.get());
-			if (ch != 0x12)
+			if (message[3] != 0x12)
 			{
-				// TODO: for <list> verb, also show contents of other types
+				// TODO: for <list> verb, also show contents of other types?
 				std::cout << "Ignoring SysEx message: Not a Data Set message" << std::endl;
 				ReadUntilEOX(inFile);
 				continue;
 			}
 
-			message.clear();
+			// Remove EOX
+			message.pop_back();
+
 			uint8_t checksum = 0;
-			while (!inFile.eof() && ch != 0xF7)
+			for (size_t i = 4; i < message.size(); i++)
 			{
-				ch = static_cast<uint8_t>(inFile.get());
-				if (ch == 0xF7)
-					break;
-				checksum += ch;
-				message.push_back(ch);
+				checksum += message[i];
 			}
 			checksum = (~checksum + 1) & 0x7F;
 			if (checksum != 0)
@@ -247,20 +243,21 @@ int main(const int argc, char *argv[])
 				return 3;
 			}
 
-			if ((message.size() < 4 && sourceDeviceType == DeviceType::JD800) || (message.size() < 5 && sourceDeviceType == DeviceType::JD990))
+			// Remove checksum byte
+			message.pop_back();
+
+			if ((message.size() < 7 && sourceDeviceType == DeviceType::JD800) || (message.size() < 8 && sourceDeviceType == DeviceType::JD990))
 			{
 				std::cerr << "WARNING! Skipping SysEx, too short!" << std::endl;
 				continue;
 			}
 
-			// Remove checksum byte
-			message.pop_back();
 
 			uint32_t address = 0;
 			if (sourceDeviceType == DeviceType::JD800)
-				address = (message[0] << 14) | (message[1] << 7) | message[2];
+				address = (message[4] << 14) | (message[5] << 7) | message[6];
 			else
-				address = (message[0] << 21) | (message[1] << 14) | (message[2] << 7) | message[3];
+				address = (message[4] << 21) | (message[5] << 14) | (message[6] << 7) | message[7];
 
 			if (address + message.size() > memory.size())
 			{
@@ -268,13 +265,13 @@ int main(const int argc, char *argv[])
 				continue;
 			}
 
-			std::copy(message.begin() + ((sourceDeviceType == DeviceType::JD800) ? 3 : 4), message.end(), memory.begin() + address);
+			std::copy(message.begin() + ((sourceDeviceType == DeviceType::JD800) ? 7 : 8), message.end(), memory.begin() + address);
 
 			if (sourceDeviceType == DeviceType::JD800 && address == BASE_ADDR_800_PATCH_TEMPORARY + 256)
-				temporaryPatches800.push_back(*reinterpret_cast<const Patch800 *>(memory.data() + BASE_ADDR_800_PATCH_TEMPORARY));
+				temporaryPatches800.push_back(*reinterpret_cast<const Patch800*>(memory.data() + BASE_ADDR_800_PATCH_TEMPORARY));
 			else if (sourceDeviceType == DeviceType::JD990 && address == BASE_ADDR_990_PATCH_TEMPORARY + 256)
-				temporaryPatches990.push_back(*reinterpret_cast<const Patch990 *>(memory.data() + BASE_ADDR_990_PATCH_TEMPORARY));
-		}
+				temporaryPatches990.push_back(*reinterpret_cast<const Patch990*>(memory.data() + BASE_ADDR_990_PATCH_TEMPORARY));
+		} while (!message.empty());
 	}
 
 	if (sourceDeviceType == DeviceType::Undetermined)

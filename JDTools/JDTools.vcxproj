@@ -148,10 +148,12 @@
   <ItemGroup>
     <ClCompile Include="Convert800to990.cpp" />
     <ClCompile Include="Convert990to800.cpp" />
+    <ClCompile Include="InputFile.cpp" />
     <ClCompile Include="JDTools.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="convert.h" />
+    <ClInclude Include="InputFile.h" />
     <ClInclude Include="jd800.h" />
     <ClInclude Include="jd990.h" />
   </ItemGroup>

@@ -7,7 +7,7 @@ However, I purchased a sound bank for the JD-800 where the original SysEx dump f
 
 Knowing that the patches in this dump must be fully compatible with the JD-800, I started studying the SysEx dump structures of the two synths and threw together some code in half a day to convert between the two.
 
-Right now, the code can only handle SYX files (raw SysEx dumps) and convert from JD-800 patch format to JD-990 and vice versa. It can also convert special setups but other multi mode settings cannot be converted (there isn't much to convert that the two synths have in common...).
+The tool can load both SYX files (raw SysEx dumps) and MID / SMF files (Standard MIDI Files) and convert from JD-800 patch format to JD-990 and vice versa. The output is always a SYX file. It can also convert special setups but other multi mode settings cannot be converted (there isn't much to convert that the two synths have in common...).
 
 There's no plans for supporting the JD-08 or the JD-800 VST plugin at this point in time, as their binary exchange format differs greatly from the SysEx dump formats, and the JD-08's MIDI implementation is really minimal - sending a whole bank of patches via MIDI appears to be impossible.
 
