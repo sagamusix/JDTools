@@ -445,13 +445,13 @@ int main(const int argc, char *argv[])
 		}
 		if (sourceDeviceType == DeviceType::JD800 && memory[BASE_ADDR_800_PATCH_TEMPORARY] != UNDEFINED_MEMORY)
 		{
-			const Patch800 &p800 = *reinterpret_cast<const Patch800 *>(memory.data() + BASE_ADDR_800_PATCH_TEMPORARY);
-			std::cout << "Temporary patch: " << toString(p800.common.name) << std::endl;
+			for (const auto &p800 : temporaryPatches800)
+				std::cout << "Temporary patch: " << toString(p800.common.name) << std::endl;
 		}
 		else if (sourceDeviceType == DeviceType::JD990 && memory[BASE_ADDR_990_PATCH_TEMPORARY] != UNDEFINED_MEMORY)
 		{
-			const Patch990 &p990 = *reinterpret_cast<const Patch990 *>(memory.data() + BASE_ADDR_990_PATCH_TEMPORARY);
-			std::cout << "Temporary patch: " << toString(p990.common.name) << std::endl;
+			for (const auto &p990 : temporaryPatches990)
+				std::cout << "Temporary patch: " << toString(p990.common.name) << std::endl;
 		}
 
 		if (sourceDeviceType == DeviceType::JD800)
