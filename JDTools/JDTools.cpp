@@ -67,15 +67,6 @@ Lists all SysEx contents
 )" << std::endl;
 }
 
-static void ReadUntilEOX(std::istream &f)
-{
-	uint8_t ch = 0;
-	while (!f.eof() && ch != 0xF7)
-	{
-		ch = static_cast<uint8_t>(f.get());
-	}
-}
-
 static void WriteSysEx(std::ostream &f, uint32_t outAddress, const bool isJD990, const uint8_t *data, size_t size)
 {
 	// debug stuff
@@ -195,7 +186,6 @@ int main(const int argc, char *argv[])
 			if (ch != 0x3D && ch != 0x57)
 			{
 				std::cout << "Ignoring SysEx message: Not a JD-800 or JD-990 message" << std::endl;
-				ReadUntilEOX(inFile);
 				continue;
 			}
 
@@ -204,7 +194,6 @@ int main(const int argc, char *argv[])
 				if (sourceDeviceType == DeviceType::JD990)
 				{
 					std::cout << "WARNING: File contains mixed JD-800 and JD-990 dumps. Only JD-990 dumps will be processed." << std::endl;
-					ReadUntilEOX(inFile);
 					continue;
 				}
 				sourceDeviceType = DeviceType::JD800;
@@ -214,7 +203,6 @@ int main(const int argc, char *argv[])
 				if (sourceDeviceType == DeviceType::JD800)
 				{
 					std::cout << "WARNING: File contains mixed JD-800 and JD-990 dumps. Only JD-800 dumps will be processed." << std::endl;
-					ReadUntilEOX(inFile);
 					continue;
 				}
 				sourceDeviceType = DeviceType::JD990;
@@ -224,7 +212,6 @@ int main(const int argc, char *argv[])
 			{
 				// TODO: for <list> verb, also show contents of other types?
 				std::cout << "Ignoring SysEx message: Not a Data Set message" << std::endl;
-				ReadUntilEOX(inFile);
 				continue;
 			}
 
@@ -349,6 +336,22 @@ int main(const int argc, char *argv[])
 			ConvertPatch990To800(p990, p800);
 			WriteSysEx(outFile, BASE_ADDR_800_PATCH_TEMPORARY, false, p800);
 		}
+		if (sourceDeviceType == DeviceType::JD800 && memory[BASE_ADDR_800_SETUP_TEMPORARY] != UNDEFINED_MEMORY)
+		{
+			const SpecialSetup800 &s800 = *reinterpret_cast<const SpecialSetup800*>(memory.data() + BASE_ADDR_800_SETUP_TEMPORARY);
+			SpecialSetup990 s990;
+			std::cout << "Converting special setup (temporary)" << std::endl;
+			ConvertSetup800To990(s800, s990);
+			WriteSysEx(outFile, BASE_ADDR_990_SETUP_TEMPORARY, true, s990);
+		}
+		else if (sourceDeviceType == DeviceType::JD990 && memory[BASE_ADDR_990_SETUP_TEMPORARY] != UNDEFINED_MEMORY)
+		{
+			const SpecialSetup990& s990 = *reinterpret_cast<const SpecialSetup990*>(memory.data() + BASE_ADDR_990_SETUP_TEMPORARY);
+			SpecialSetup800 s800;
+			std::cout << "Converting special setup (temporary): " << toString(s990.common.name) << std::endl;
+			ConvertSetup990To800(s990, s800);
+			WriteSysEx(outFile, BASE_ADDR_800_SETUP_TEMPORARY, false, s800);
+		}
 	}
 	else if (verb == "merge")
 	{
@@ -374,7 +377,7 @@ int main(const int argc, char *argv[])
 
 			std::ofstream outFile(outFilename, std::ios::trunc | std::ios::binary);
 
-			for (size_t destPatch = 0; destPatch < 64; destPatch++, sourcePatch++)
+			for (uint32_t destPatch = 0; destPatch < 64; destPatch++, sourcePatch++)
 			{
 				if(sourcePatch >= numPatches)
 					break;
