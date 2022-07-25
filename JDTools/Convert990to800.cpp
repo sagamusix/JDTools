@@ -259,7 +259,7 @@ void ConvertPatch990To800(const Patch990 &p990, Patch800 &p800)
 	p800.common.keyRangeHighD = p990.keyRanges.keyRangeHighD;
 	p800.common.benderRangeDown = p990.common.bendRangeDown;
 	p800.common.benderRangeUp = p990.common.bendRangeUp;
-	p800.common.aTouchBend = 0;  // Will be populated by tone conversion
+	p800.common.aTouchBend = 14;  // Will be populated by tone conversion
 	p800.common.soloSW = p990.keyEffects.soloSW;
 	p800.common.soloLegato = p990.keyEffects.soloLegato;
 	p800.common.portamentoSW = p990.keyEffects.portamentoSW;
