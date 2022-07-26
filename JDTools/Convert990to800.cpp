@@ -314,7 +314,7 @@ void ConvertPatch990To800(const Patch990 &p990, Patch800 &p800)
 	p800.effect.distortionLevel = p990.effect.distortionLevel;
 
 	p800.effect.phaserManual = p990.effect.phaserManual;
-	p800.effect.phaseRate = p990.effect.phaseRate;
+	p800.effect.phaserRate = p990.effect.phaserRate;
 	p800.effect.phaserDepth = p990.effect.phaserDepth;
 	p800.effect.phaserResonance = p990.effect.phaserResonance;
 	p800.effect.phaserMix = p990.effect.phaserMix;
@@ -380,7 +380,7 @@ void ConvertSetup990To800(const SpecialSetup990 &s990, SpecialSetup800 &s800)
 
 	s800.common.benderRangeDown = s990.common.benderRangeDown;
 	s800.common.benderRangeUp = s990.common.benderRangeUp;
-	s800.common.aTouchBendSens = 0;  // Will be populated by tone conversion
+	s800.common.aTouchBendSens = 14;  // Will be populated by tone conversion
 
 	if(s990.common.level != 80)
 		std::cerr << "LOSSY CONVERSION! JD-990 setup has level != 80: " << int(s990.common.level) << std::endl;

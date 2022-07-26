@@ -204,7 +204,7 @@ void ConvertPatch800To990(const Patch800 &p800, Patch990 &p990)
 	p990.effect.distortionLevel = p800.effect.distortionLevel;
 
 	p990.effect.phaserManual = p800.effect.phaserManual;
-	p990.effect.phaseRate = p800.effect.phaseRate;
+	p990.effect.phaserRate = p800.effect.phaserRate;
 	p990.effect.phaserDepth = p800.effect.phaserDepth;
 	p990.effect.phaserResonance = p800.effect.phaserResonance;
 	p990.effect.phaserMix = p800.effect.phaserMix;

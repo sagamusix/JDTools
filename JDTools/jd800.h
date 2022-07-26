@@ -197,7 +197,7 @@ struct Patch800
 			distortionLevel,
 
 			phaserManual,
-			phaseRate,
+			phaserRate,
 			phaserDepth,
 			phaserResonance,
 			phaserMix,

@@ -245,7 +245,7 @@ struct Patch990
 			distortionLevel,
 
 			phaserManual,
-			phaseRate,
+			phaserRate,
 			phaserDepth,
 			phaserResonance,
 			phaserMix,
