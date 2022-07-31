@@ -65,7 +65,7 @@ List all the contents of a SysEx dump by invoking `JDTools list <input.syx>`. Th
 
 # History
 
-## v.08 (2022-07-31)
+## v0.8 (2022-07-31)
 
 - Convert to / from JD-800 VST and Zenology .bin format
 - Convert to / from JD-08 / ZC1 hardware .svz format
