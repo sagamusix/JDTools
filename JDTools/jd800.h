@@ -169,7 +169,7 @@ struct Patch800
 	{
 		uint8_t
 			keyMode,     // 0 = whole
-			splitPoint,  // default = 36?
+			splitPoint,  // default = 36
 			lowerChannel,
 			upperChannel,
 			lowerProgramChange,
@@ -229,7 +229,7 @@ struct Patch800
 
 			reverbType,
 			reverbPreDelay,
-			reveryEarlyRefLevel,
+			reverbEarlyRefLevel,
 			reverbHFDamp,
 			reverbTime,
 			reverbLevel,

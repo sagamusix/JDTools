@@ -6,9 +6,13 @@
 
 struct Patch800;
 struct Patch990;
+struct PatchVST;
 
 void ConvertPatch800To990(const Patch800 &p800, Patch990 &p990);
 void ConvertPatch990To800(const Patch990 &p990, Patch800 &p800);
+
+void ConvertPatch800ToVST(const Patch800 &p800, PatchVST &pVST);
+void ConvertPatchVSTTo800(const PatchVST &pVST, Patch800 &p800);
 
 struct SpecialSetup800;
 struct SpecialSetup990;

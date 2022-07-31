@@ -9,10 +9,25 @@ InputFile::InputFile(std::istream &file)
 {
 	char magic[4] = {};
 	m_file.read(magic, 4);
-	m_isSMF = !std::memcmp(magic, "MThd", 4);
-	if (m_isSMF)
+
+	if (!std::memcmp(magic, "MThd", 4))
 	{
-		uint32_t headerLength = ReadUint32();
+		m_type = Type::MID;
+	}
+	else if (!std::memcmp(magic, "SVZa", 4))
+	{
+		file.seekg(16);
+		char type[4] = {};
+		m_file.read(type, 4);
+		if (!std::memcmp(type, "EXTa", 4))
+			m_type = Type::SVZplugin;
+		else if (!std::memcmp(type, "DIFa", 4))
+			m_type = Type::SVZhardware;
+	}
+
+	if (m_type == Type::MID)
+	{
+		uint32_t headerLength = ReadUint32BE();
 		m_file.seekg(headerLength, std::ios::cur);
 		m_trackBytesRemain = 0;
 	}
@@ -24,7 +39,7 @@ InputFile::InputFile(std::istream &file)
 
 std::vector<uint8_t> InputFile::NextSysExMessage()
 {
-	if (m_isSMF)
+	if (m_type == Type::MID)
 	{
 		while (!m_file.eof())
 		{
@@ -39,7 +54,7 @@ std::vector<uint8_t> InputFile::NextSysExMessage()
 					std::cerr << "Malformed MIDI file? Unexpected track header value" << std::endl;
 					return {};
 				}
-				m_trackBytesRemain = ReadUint32();
+				m_trackBytesRemain = ReadUint32BE();
 			}
 
 			// Skip delay value
@@ -104,9 +119,9 @@ std::vector<uint8_t> InputFile::NextSysExMessage()
 			}
 		}
 	}
-	else
+	else if (m_type == Type::SYX)
 	{
-		if(m_file.eof())
+		if (m_file.eof())
 			return {};
 
 		uint8_t ch = 0;
@@ -140,7 +155,7 @@ uint32_t InputFile::ReadVarInt()
 	return value;
 }
 
-uint32_t InputFile::ReadUint32()
+uint32_t InputFile::ReadUint32BE()
 {
 	char bytes[4] = {};
 	m_file.read(bytes, 4);
@@ -151,7 +166,7 @@ uint32_t InputFile::ReadUint32()
 		| static_cast<uint8_t>(bytes[3]);
 }
 
-uint16_t InputFile::ReadUint16()
+uint16_t InputFile::ReadUint16BE()
 {
 	char bytes[2] = {};
 	m_file.read(bytes, 2);

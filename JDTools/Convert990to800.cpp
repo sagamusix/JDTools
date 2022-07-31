@@ -13,7 +13,7 @@ static void ConvertToneControl(const uint8_t source, const uint8_t dest, uint8_t
 	if (source == 0 && dest == 4)
 	{
 		// Mod Wheel to Pitch via LFO 1
-		if(depth < 50)
+		if (depth < 50)
 		{
 			std::cerr << "LOSSY CONVERSION! Mod Wheel to LFO1 mod matrix routing with negative modulation!" << std::endl;
 			depth = 100 - depth;
@@ -54,7 +54,7 @@ static void ConvertToneControl(const uint8_t source, const uint8_t dest, uint8_t
 	{
 		// Aftertouch to Pitch
 		t800.wg.aTouchBend = 1;
-		if(depth == -36 + 50)
+		if (depth == -36 + 50)
 			aTouchBend800 = 0;
 		else if (depth == -24 + 50)
 			aTouchBend800 = 1;
@@ -73,7 +73,7 @@ static void ConvertToneControl(const uint8_t source, const uint8_t dest, uint8_t
 		// Aftertouch to TVA
 		t800.tva.aTouchSens = depth;
 	}
-	else if(depth != 50)
+	else if (depth != 50)
 	{
 		std::cerr << "LOSSY CONVERSION! Unknown mod matrix routing: source = " << int(source) << ", dest = " << int(dest) << std::endl;
 	}
@@ -354,7 +354,7 @@ void ConvertPatch990To800(const Patch990 &p990, Patch800 &p800)
 
 	p800.effect.reverbType = p990.effect.reverbType;
 	p800.effect.reverbPreDelay = p990.effect.reverbPreDelay;
-	p800.effect.reveryEarlyRefLevel = p990.effect.reveryEarlyRefLevel;
+	p800.effect.reverbEarlyRefLevel = p990.effect.reverbEarlyRefLevel;
 	p800.effect.reverbHFDamp = p990.effect.reverbHFDamp;
 	p800.effect.reverbTime = p990.effect.reverbTime;
 	p800.effect.reverbLevel = p990.effect.reverbLevel;
@@ -382,7 +382,7 @@ void ConvertSetup990To800(const SpecialSetup990 &s990, SpecialSetup800 &s800)
 	s800.common.benderRangeUp = s990.common.benderRangeUp;
 	s800.common.aTouchBendSens = 14;  // Will be populated by tone conversion
 
-	if(s990.common.level != 80)
+	if (s990.common.level != 80)
 		std::cerr << "LOSSY CONVERSION! JD-990 setup has level != 80: " << int(s990.common.level) << std::endl;
 	if (s990.common.pan != 50)
 		std::cerr << "LOSSY CONVERSION! JD-990 setup has pan != 50: " << int(s990.common.pan) << std::endl;

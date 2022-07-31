@@ -286,7 +286,7 @@ struct Patch990
 
 			reverbType,
 			reverbPreDelay,
-			reveryEarlyRefLevel,
+			reverbEarlyRefLevel,
 			reverbHFDamp,
 			reverbTime,
 			reverbLevel;

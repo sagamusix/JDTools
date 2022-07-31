@@ -85,7 +85,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
@@ -103,7 +103,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
@@ -126,7 +126,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
@@ -144,7 +144,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
@@ -167,15 +167,27 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Convert800to990.cpp" />
+    <ClCompile Include="Convert800toVST.cpp" />
     <ClCompile Include="Convert990to800.cpp" />
+    <ClCompile Include="ConvertVSTto800.cpp" />
     <ClCompile Include="InputFile.cpp" />
     <ClCompile Include="JDTools.cpp" />
+    <ClCompile Include="miniz.c" />
+    <ClCompile Include="SVZ.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="convert.h" />
     <ClInclude Include="InputFile.h" />
     <ClInclude Include="jd800.h" />
     <ClInclude Include="jd990.h" />
+    <ClInclude Include="jdvst.h" />
+    <ClInclude Include="miniz.h" />
+    <ClInclude Include="PrecomputedTablesVST.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="SVZ.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="JDTools.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

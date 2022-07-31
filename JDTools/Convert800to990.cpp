@@ -245,7 +245,7 @@ void ConvertPatch800To990(const Patch800 &p800, Patch990 &p990)
 
 	p990.effect.reverbType = p800.effect.reverbType;
 	p990.effect.reverbPreDelay = p800.effect.reverbPreDelay;
-	p990.effect.reveryEarlyRefLevel = p800.effect.reveryEarlyRefLevel;
+	p990.effect.reverbEarlyRefLevel = p800.effect.reverbEarlyRefLevel;
 	p990.effect.reverbHFDamp = p800.effect.reverbHFDamp;
 	p990.effect.reverbTime = p800.effect.reverbTime;
 	p990.effect.reverbLevel = p800.effect.reverbLevel;
