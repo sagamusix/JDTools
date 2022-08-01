@@ -22,28 +22,37 @@ It is possible to convert between practically all format combinations:
 
 - JD-800 SysEx dump (SYX, MID) to JD-990 SysEx dump (SYX)
 - JD-800 SysEx dump (SYX, MID) to JD-800 VST / Zenology patch bank (BIN)
-- JD-800 SysEx dump (SYX, MID) to JD-08 / ZC1 patch bank (SVZ)
+- JD-800 SysEx dump (SYX, MID) to JD-08 patch bank (SVD)
+- JD-800 SysEx dump (SYX, MID) to ZC1 patch bank (SVZ)
 - JD-990 SysEx dump (SYX, MID) to JD-800 SysEx dump (SYX)
 - JD-990 SysEx dump (SYX, MID) to JD-800 VST / Zenology patch bank (BIN)
-- JD-990 SysEx dump (SYX, MID) to JD-08 / ZC1 patch bank (SVZ)
+- JD-990 SysEx dump (SYX, MID) to JD-08 patch bank (SVD)
+- JD-990 SysEx dump (SYX, MID) to ZC1 patch bank (SVZ)
 - JD-800 VST or Zenology patch bank (BIN) to JD-800 SysEx dump (SYX)
-- JD-800 VST or Zenology patch bank (BIN) to JD-08 / ZC1 patch bank (SVZ)
-- JD-08 / ZC1 patch bank to JD-800 SysEx dump (SYX)
-- JD-08 / ZC1 patch bank to JD-800 VST or Zenology patch bank (BIN)
+- JD-800 VST or Zenology patch bank (BIN) to JD-08 patch bank (SVD)
+- JD-800 VST or Zenology patch bank (BIN) to ZC1 patch bank (SVZ)
+- JD-08 patch bank (SVD) to JD-800 SysEx dump (SYX)
+- JD-08 patch bank (SVD) to JD-800 VST or Zenology patch bank (BIN)
+- JD-08 patch bank (SVD) to ZC1 patch bank (SVZ)
+- ZC1 patch bank (SVZ) to JD-800 SysEx dump (SYX)
+- ZC1 patch bank (SVZ) to JD-800 VST or Zenology patch bank (BIN)
+- ZC1 patch bank (SVZ) to JD-08 patch bank (SVD)
 
 The input format of the conversion is determined automatically, but due to the different output options, the desired target format has to be specified explicitely.
 
-By invoking `JDTools convert syx <input> <output>`, the input file is converted to a SysEx dump (so if the source is a JD-800 SysEx dump, the output file is a JD-990 SysEx dump, in all other cases the output is a JD-800 SysEx dump).
+By invoking `JDTools convert syx <input.file> <output.syx>`, the input file is converted to a SysEx dump (so if the source is a JD-800 SysEx dump, the output file is a JD-990 SysEx dump, in all other cases the output is a JD-800 SysEx dump).
 
-By invoking `JDTools convert bin <input> <output>`, the input file is converted to the JD-800 VST patch bank format (BIN).
+By invoking `JDTools convert bin <input.file> <output.bin>`, the input file is converted to the JD-800 VST patch bank format (BIN).
 
-By invoking `JDTools convert svz <input> <output>`, the input file is converted to the JD-08 / ZC1 hardware patch bank format (SVZ).
+By invoking `JDTools convert svd <input.file> <JD08Backup.svd>`, the input file is converted to the JD-08 patch bank format (SVZ). The output file should be named JD08Backup.svd so that the JD-08 can find it.
+
+By invoking `JDTools convert svz <input.file> <output.svz>`, the input file is converted to the ZC1 hardware patch bank format (SVZ).
 
 To convert e.g. a JD-800 VST patch bank to a JD-990 SysEx dump, an intermediate conversion to a JD-800 SysEx dump is required.
 
 ## Merging
 
-Merge any number of SysEx dumps containing temporary patches by invoking `JDTools merge <input1.syx> <input2.syx> <input3.syx> ... <output.syx>`. If an input file contains multiple dumps for the temporary patch area, they are all considered.
+Merge any number of SysEx dumps (SYX, MID) containing temporary patches by invoking `JDTools merge <input1.syx> <input2.syx> <input3.syx> ... <output.syx>`. If an input file contains multiple dumps for the temporary patch area, they are all considered.
 
 The following batch script can be used to pass a directory name instead of a list of individual files:
 
@@ -65,10 +74,14 @@ List all the contents of a SysEx dump by invoking `JDTools list <input.syx>`. Th
 
 # History
 
+## v0.9 (2022-08-01)
+
+- Convert to / from JD-08 .svd format. Note that these files typically contain 256 patches (all 4 banks of 64 patches). The JD-800, JD-990 and the JD-800 VST can only access the first 64 patches, Zenology can access all 256 of them. In a future version, splitting these files into four individual files for each bank will be possible.
+
 ## v0.8 (2022-07-31)
 
 - Convert to / from JD-800 VST and Zenology .bin format
-- Convert to / from JD-08 / ZC1 hardware .svz format
+- Convert to / from ZC1 hardware .svz format
 - JD-990 to JD-800 conversion: Aftertouch bend depth is now initialized to +/-0 instead of -36 for special setups if no key uses aftertouch bend
 
 ## v0.7 (2022-07-25)

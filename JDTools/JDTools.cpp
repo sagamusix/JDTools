@@ -60,17 +60,23 @@ Usage:
 
 JDTools convert syx <input> <output>
   Converts from JD-800 SysEx dump (SYX / MID), JD-990 SysEx dump (SYX / MID),
-  JD-800 VST BIN file or JD-08 / ZC1 SVZ file to JD-800 or JD-990 SysEx dump (SYX).
+  JD-800 VST BIN, JD-08 SVD or ZC1 SVZ file
+  to JD-800 or JD-990 SysEx dump (SYX).
   Output is a JD-990 SysEx dump if the source file was a JD-800 SysEx dump,
   otherwise it is always a JD-800 SysEx dump.
 
 JDTools convert bin <input> <output>
-  Converts from JD-800 SysEx dump (SYX / MID), JD-990 SysEx dump (SYX / MID)
-  or JD-08 / ZC1 SVZ file to JD-800 VST BIN file.
+  Converts from JD-800 SysEx dump (SYX / MID), JD-990 SysEx dump (SYX / MID),
+  JD-08 SVD or ZC1 SVZ file to JD-800 VST BIN file.
+
+JDTools convert svd <input> <JD08Backup.svd>
+  Converts from JD-800 SysEx dump (SYX / MID), JD-990 SysEx dump (SYX / MID),
+  JD-800 VST BIN or ZC1 SVZ file to JD-08 SVD file.
+  The output file should be named JD08Backup.svd so that the JD-08 can find it.
 
 JDTools convert svz <input> <output>
-  Converts from JD-800 SysEx dump (SYX / MID), JD-990 SysEx dump (SYX / MID)
-  or JD-800 VST BIN file to JD-08 / ZC1 SVZ file.
+  Converts from JD-800 SysEx dump (SYX / MID), JD-990 SysEx dump (SYX / MID),
+  JD-800 VST BIN or JD-08 SVD file to ZC1 SVZ file.
 
 JDTools merge <input1.syx> <input2.syx> <input3.syx> ... <output.syx>
   Merges SYX or MID files containing temporary patches for either JD-800 or
@@ -172,6 +178,10 @@ int main(const int argc, char *argv[])
 		{
 			targetType = InputFile::Type::SVZhardware;
 		}
+		else if (targetStr == "svd" || targetStr == "SVD")
+		{
+			targetType = InputFile::Type::SVD;
+		}
 		else
 		{
 			PrintUsage();
@@ -201,7 +211,7 @@ int main(const int argc, char *argv[])
 		std::ifstream inFile(inFilename, std::ios::binary);
 		if (!inFile)
 		{
-			std::cout << "Could open " << inFilename << " for reading!" << std::endl;
+			std::cout << "Could not open " << inFilename << " for reading!" << std::endl;
 			return 2;
 		}
 
@@ -216,6 +226,13 @@ int main(const int argc, char *argv[])
 		else if (inputFile.GetType() == InputFile::Type::SVZhardware)
 		{
 			vstPatches = ReadSVZforHardware(inFile);
+			if (vstPatches.empty())
+				return 2;
+			sourceDeviceType = DeviceType::JD800VST;
+		}
+		else if (inputFile.GetType() == InputFile::Type::SVD)
+		{
+			vstPatches = ReadSVD(inFile);
 			if (vstPatches.empty())
 				return 2;
 			sourceDeviceType = DeviceType::JD800VST;
@@ -327,33 +344,35 @@ int main(const int argc, char *argv[])
 
 	if (verb == "convert")
 	{
+		std::string sourceName, targetName;
+		if (sourceDeviceType == DeviceType::JD800)
+			sourceName = "JD-800";
+		else if (sourceDeviceType == DeviceType::JD990)
+			sourceName = "JD-800";
+		else if (sourceDeviceType == DeviceType::JD800VST)
+			sourceName = "JD-800 VST / JD-08 / ZC1";
+
 		if (targetType == InputFile::Type::SYX)
 		{
 			if (sourceDeviceType == DeviceType::JD800)
-				std::cout << "Converting JD-800 patch format to JD-990..." << std::endl;
-			else if (sourceDeviceType == DeviceType::JD990)
-				std::cout << "Converting JD-990 patch format to JD-800..." << std::endl;
-			else if (sourceDeviceType == DeviceType::JD800VST)
-				std::cout << "Converting JD-800 VST / JD-08 patch format to JD-800..." << std::endl;
+				targetName = "JD-990";
+			else
+				targetName = "JD-800";
 		}
 		else if (targetType == InputFile::Type::SVZplugin)
 		{
-			if (sourceDeviceType == DeviceType::JD800)
-				std::cout << "Converting JD-800 patch format to JD-800 VST..." << std::endl;
-			else if (sourceDeviceType == DeviceType::JD990)
-				std::cout << "Converting JD-990 patch format to JD-800 VST..." << std::endl;
-			else if (sourceDeviceType == DeviceType::JD800VST)
-				std::cout << "Converting JD-800 VST / JD-08 patch format to JD-800 VST..." << std::endl;
+			targetName = "JD-800 VST";
 		}
 		else if (targetType == InputFile::Type::SVZhardware)
 		{
-			if (sourceDeviceType == DeviceType::JD800)
-				std::cout << "Converting JD-800 patch format to JD-08 / ZC1..." << std::endl;
-			else if (sourceDeviceType == DeviceType::JD990)
-				std::cout << "Converting JD-990 patch format to JD-08 / ZC1..." << std::endl;
-			else if (sourceDeviceType == DeviceType::JD800VST)
-				std::cout << "Converting JD-800 VST / JD-08 patch format to JD-08 / ZC1..." << std::endl;
+			targetName = "ZC1";
 		}
+		else if (targetType == InputFile::Type::SVD)
+		{
+			targetName = "JD-08";
+		}
+
+		std::cout << "Converting " << sourceName << " patch format to " << targetName << "..." << std::endl;
 
 		std::string outFilename = argv[4];
 		std::ofstream outFile(outFilename, std::ios::trunc | std::ios::binary);
@@ -412,7 +431,7 @@ int main(const int argc, char *argv[])
 					ConvertPatchVSTTo800(pVST, p800);
 					WriteSysEx(outFile, address800, false, p800);
 				}
-				else if(targetType == InputFile::Type::SVZhardware)
+				else if(targetType == InputFile::Type::SVZhardware || targetType == InputFile::Type::SVD)
 				{
 					if (pVST.zenHeader.modelID1 != 3 || pVST.zenHeader.modelID2 != 5)
 					{
@@ -435,7 +454,11 @@ int main(const int argc, char *argv[])
 			WriteSVZforHardware(outFile, vstPatches);
 			return 0;
 		}
-
+		else if (targetType == InputFile::Type::SVD)
+		{
+			WriteSVD(outFile, vstPatches);
+			return 0;
+		}
 
 		// Convert rhythm setup / special setup
 		const uint32_t address800 = BASE_ADDR_800_SETUP_INTERNAL;

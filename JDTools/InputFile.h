@@ -17,6 +17,7 @@ public:
 		MID,
 		SVZplugin,
 		SVZhardware,
+		SVD,
 	};
 
 	InputFile(std::istream& file);

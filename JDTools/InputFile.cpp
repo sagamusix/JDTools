@@ -16,13 +16,19 @@ InputFile::InputFile(std::istream &file)
 	}
 	else if (!std::memcmp(magic, "SVZa", 4))
 	{
-		file.seekg(16);
+		m_file.seekg(16);
 		char type[4] = {};
 		m_file.read(type, 4);
 		if (!std::memcmp(type, "EXTa", 4))
 			m_type = Type::SVZplugin;
 		else if (!std::memcmp(type, "DIFa", 4))
 			m_type = Type::SVZhardware;
+	}
+	else if (magic[2] == 'S' && magic[3] == 'V')
+	{
+		m_file.read(magic, 4);
+		if (!std::memcmp(magic, "D5\x00\x00", 4))
+			m_type = Type::SVD;
 	}
 
 	if (m_type == Type::MID)
@@ -33,7 +39,7 @@ InputFile::InputFile(std::istream &file)
 	}
 	else
 	{
-		file.seekg(0);
+		m_file.seekg(0);
 	}
 }
 

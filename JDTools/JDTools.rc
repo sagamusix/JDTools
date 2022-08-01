@@ -51,8 +51,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,8,0,0
- PRODUCTVERSION 0,8,0,0
+ FILEVERSION 0,9,0,0
+ PRODUCTVERSION 0,9,0,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -69,12 +69,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Johannes Schultz"
             VALUE "FileDescription", "JDTools - Patch conversion utility for Roland JD-800 / JD-990"
-            VALUE "FileVersion", "0.8.0.0"
+            VALUE "FileVersion", "0.9.0.0"
             VALUE "InternalName", "JDTools.exe"
             VALUE "LegalCopyright", "Copyright (C) 2022 Johannes Schultz"
             VALUE "OriginalFilename", "JDTools.exe"
             VALUE "ProductName", "JDTools"
-            VALUE "ProductVersion", "0.8.0.0"
+            VALUE "ProductVersion", "0.9.0.0"
         END
     END
     BLOCK "VarFileInfo"
