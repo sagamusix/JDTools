@@ -1,6 +1,6 @@
 # JDTools - Patch conversion utility for Roland JD-800 / JD-990
 
-While it is easy to convert JD-800 patches to use with the JD-990 (the JD-990 itself can do it, and there are PC tools for it as well),
+While it is easy to convert JD-800 patches to use with the JD-990 (the JD-990 itself can do it through RAM card exchange, and there are PC tools for it as well),
 there don't appear to be any tools to go in the opposite direction. In the general case this makes sense, because the JD-990 has more features.
 
 However, I purchased a sound bank for the JD-800 where the original SysEx dump for the JD-800 was lost and all I got was a SysEx dump for the JD-990, which my JD-800 obviously couldn't load.
@@ -10,9 +10,9 @@ Knowing that the patches in this dump must be fully compatible with the JD-800, 
 The tool can load both SYX files (raw SysEx dumps) and MID / SMF files (Standard MIDI Files) and convert from JD-800 patch format to JD-990 and vice versa. It can also convert special setups but other multi mode settings cannot be converted (there isn't much to convert that the two synths have in common...).
 
 After the basic functionality was done, I wondered what would be required to support the JD-800 VST plugin or the JD-08 as well - turns out, quite a lot! Nevertheless, I managed to add support for them as well, so you can convert original JD-800 patches to the plugin's format (as long as they don't use ROM card waveforms), and also convert plugin banks to use with the original JD-800 (as long as they don't use extended features such as unison or tempo-synced LFOs).
-As the plugin appears to be based on Roland's ZenCore engine, don't expect conversions that sound 100% identical. Some parameters seem to have much lower internal precision than on a real JD-800. On the upside, the converted files also work with the Zenology plugin. But as the conversion process is quite complex, it's always possible there is a bug, so please report those if you find any.
+As the plugin appears to be based on Roland's ZenCore engine, don't expect conversions that sound 100% identical (there are well-known differences). Some parameters seem to have much lower internal precision than on a real JD-800. On the upside, the converted files also work with the Zenology plugin. But as the conversion process is quite complex, it's always possible there is a bug, so please report those if you find any.
 
-Figuring out the plugin and SVZ hardware patch format was a lot of work, so if you find this tool useful, please consider [donating](https://paypal.me/JohannesSchultz) a few bucks.
+Figuring out the data structures shared by the plugin, SVZ hardware and SVD patch formats was a lot of work, so if you find this tool useful, please consider [donating](https://paypal.me/JohannesSchultz) a few bucks.
 
 # Usage
 
@@ -20,25 +20,30 @@ Figuring out the plugin and SVZ hardware patch format was a lot of work, so if y
 
 It is possible to convert between practically all format combinations:
 
-- JD-800 SysEx dump (SYX, MID) to JD-990 SysEx dump (SYX)
-- JD-800 SysEx dump (SYX, MID) to JD-800 VST / Zenology patch bank (BIN)
-- JD-800 SysEx dump (SYX, MID) to JD-08 patch bank (SVD)
-- JD-800 SysEx dump (SYX, MID) to ZC1 patch bank (SVZ)
-- JD-990 SysEx dump (SYX, MID) to JD-800 SysEx dump (SYX)
-- JD-990 SysEx dump (SYX, MID) to JD-800 VST / Zenology patch bank (BIN)
-- JD-990 SysEx dump (SYX, MID) to JD-08 patch bank (SVD)
-- JD-990 SysEx dump (SYX, MID) to ZC1 patch bank (SVZ)
-- JD-800 VST or Zenology patch bank (BIN) to JD-800 SysEx dump (SYX)
-- JD-800 VST or Zenology patch bank (BIN) to JD-08 patch bank (SVD)
-- JD-800 VST or Zenology patch bank (BIN) to ZC1 patch bank (SVZ)
-- JD-08 patch bank (SVD) to JD-800 SysEx dump (SYX)
-- JD-08 patch bank (SVD) to JD-800 VST or Zenology patch bank (BIN)
-- JD-08 patch bank (SVD) to ZC1 patch bank (SVZ)
-- ZC1 patch bank (SVZ) to JD-800 SysEx dump (SYX)
-- ZC1 patch bank (SVZ) to JD-800 VST or Zenology patch bank (BIN)
-- ZC1 patch bank (SVZ) to JD-08 patch bank (SVD)
+- JD-800 SysEx dump (SYX, MID) can be converted to...
+  - JD-990 SysEx dump (SYX)
+  - JD-800 VST / Zenology patch bank (BIN)
+  - JD-08 patch bank (SVD)
+  - ZC1 patch bank (SVZ)
+- JD-990 SysEx dump (SYX, MID) can be converted to...
+  - JD-800 SysEx dump (SYX)
+  - JD-800 VST / Zenology patch bank (BIN)
+  - JD-08 patch bank (SVD)
+  - ZC1 patch bank (SVZ)
+- JD-800 VST or Zenology patch bank (BIN) can be converted to... 
+  - JD-800 SysEx dump (SYX)
+  - JD-08 patch bank (SVD)
+  - ZC1 patch bank (SVZ)
+- JD-08 patch bank (SVD) can be converted to...
+  - JD-800 SysEx dump (SYX)
+  - JD-800 VST or Zenology patch bank (BIN)
+  - ZC1 patch bank (SVZ)
+- ZC1 patch bank (SVZ) can be converted to...
+  - JD-800 SysEx dump (SYX)
+  - JD-800 VST or Zenology patch bank (BIN)
+  - JD-08 patch bank (SVD)
 
-The input format of the conversion is determined automatically, but due to the different output options, the desired target format has to be specified explicitely.
+The input format of the conversion is determined automatically, but due to the different output options, the desired target format has to be specified explicitly.
 
 By invoking `JDTools convert syx <input.file> <output.syx>`, the input file is converted to a SysEx dump (so if the source is a JD-800 SysEx dump, the output file is a JD-990 SysEx dump, in all other cases the output is a JD-800 SysEx dump).
 
@@ -70,9 +75,9 @@ JDTools merge %LIST% %2
 
 ## Listing
 
-List all the contents of a SysEx dump by invoking `JDTools list <input.syx>`. This also lists objects that JDTools cannot convert (such as the JD-800 display area), but the actual contents are not shown for most of them.
+List all the contents of a SysEx dump (or any of the other supported input formats) by invoking `JDTools list <input.syx>`. This also lists objects that JDTools cannot convert (such as the JD-800 display area), but the actual contents are not shown for most of them. Useful for easily creating a patch listing of your banks.
 
-# History
+# Version History
 
 ## v0.9 (2022-08-01)
 
@@ -90,7 +95,7 @@ Various small improvements:
 
 - JD-990 to JD-800 conversion: Aftertouch bend depth is now initialized to +/-0 instead of -36 if no tone uses aftertouch bend
 - Temporary patches and setups are now also converted and listed
-- On Windows 10 Version 1903 and newer, file paths outside of the current locale are supported
+- On Windows 10 Version 1903 and newer, any UTF-8 file paths are now supported. On earlier Windows versions, only paths conforming to the current locale (ANSI codepage) are supported, as before.
 
 
 ## v0.6 (2022-07-22)

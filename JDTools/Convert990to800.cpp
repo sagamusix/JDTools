@@ -61,7 +61,7 @@ static void ConvertToneControl(const uint8_t source, const uint8_t dest, uint8_t
 		else if (depth >= -12 + 50 && depth <= 12 + 50)
 			aTouchBend800 = depth - (-12 + 50) + 2;
 		else
-			std::cerr << "LOSSY CONVERSION! Aftertouch to pitch bend modulation has incompatible value:" << int(depth) << std::endl;
+			std::cerr << "LOSSY CONVERSION! Aftertouch to pitch bend modulation has incompatible value: " << int(depth) << std::endl;
 	}
 	else if (source == 1 && dest == 1)
 	{

@@ -519,7 +519,7 @@ int main(const int argc, char *argv[])
 		else if (sourceDeviceType == DeviceType::JD990)
 			std::cout << "Merging " << temporaryPatches990.size() << " JD-990 patches..." << std::endl;
 		else if (sourceDeviceType == DeviceType::JD800VST)
-			std::cout << "Nothing to merge, JD-800 VST does not support temporary patches..." << std::endl;
+			std::cout << "Nothing to merge, temporary patches are only supported in JD-800 / JD-990 SysEx dumps..." << std::endl;
 
 		const size_t numPatches = ((sourceDeviceType == DeviceType::JD800) ? temporaryPatches800.size() : temporaryPatches990.size());
 		const size_t numBanks = (numPatches + 63) / 64;

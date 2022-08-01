@@ -30,12 +30,12 @@ template<typename T, size_t N>
 static void ConvertEQBand(const T(&freqTable)[N], uint8_t &freq, uint8_t &gain, uint16_t srcFreq, int16_t srcGain, const bool enabled, const std::string_view name)
 {
 	if (!MapToArrayIndex(srcFreq, freqTable, freq) && srcFreq != 0 && enabled)
-		std::cerr << "LOSSY CONVERSION! Unsupported EQ " << name << " frequency value : " << srcFreq << " Hz" << std::endl;
+		std::cerr << "LOSSY CONVERSION! Unsupported EQ " << name << " frequency value: " << srcFreq << " Hz" << std::endl;
 
 	gain = static_cast<uint8_t>(enabled ? std::clamp(srcGain / 10, -15, 15) + 15 : 0);
 
 	if ((srcGain < -150 || srcGain > 150) && enabled)
-		std::cerr << "LOSSY CONVERSION! Out-of-range EQ " << name << " gain value : " << srcGain * 0.1f << " dB" << std::endl;
+		std::cerr << "LOSSY CONVERSION! Out-of-range EQ " << name << " gain value: " << srcGain * 0.1f << " dB" << std::endl;
 	else if ((srcGain % 10) && enabled)
 		std::cerr << "LOSSY CONVERSION! Truncating EQ " << name << " gain fractional precision: " << srcGain * 0.1f << " dB" << std::endl;
 }
@@ -43,7 +43,7 @@ static void ConvertEQBand(const T(&freqTable)[N], uint8_t &freq, uint8_t &gain, 
 static void ConvertToneVSTTo800(const ToneVST &tVST, Tone800 &t800)
 {
 	if (tVST.wg.gain != 3 && tVST.common.layerEnabled)
-		std::cerr << "LOSSY CONVERSION! Tone uses gain != 3:" << int(tVST.wg.gain) << std::endl;
+		std::cerr << "LOSSY CONVERSION! Tone uses gain != 3: " << int(tVST.wg.gain) << std::endl;
 
 	t800.common.velocityCurve = tVST.common.velocityCurve;
 	t800.common.holdControl = tVST.common.holdControl;
@@ -208,7 +208,7 @@ void ConvertPatchVSTTo800(const PatchVST &pVST, Patch800 &p800)
 	ConvertEQBand(PatchVST::EQ::MidFreq, p800.eq.midFreq, p800.eq.midGain, pVST.eq.midFreq, pVST.eq.midGain, pVST.eq.eqEnabled, "mid");
 	ConvertEQBand(PatchVST::EQ::HighFreq, p800.eq.highFreq, p800.eq.highGain, pVST.eq.highFreq, pVST.eq.highGain, pVST.eq.eqEnabled, "high");
 	if (!MapToArrayIndex(pVST.eq.midQ, PatchVST::EQ::MidQ, p800.eq.midQ) && pVST.eq.midGain != 0 && pVST.eq.eqEnabled)
-		std::cerr << "LOSSY CONVERSION! Unsupported EQ mid Q value:" << pVST.eq.midQ << std::endl;
+		std::cerr << "LOSSY CONVERSION! Unsupported EQ mid Q value: " << pVST.eq.midQ << std::endl;
 
 	p800.midiTx.keyMode = 0;
 	p800.midiTx.splitPoint = 36;

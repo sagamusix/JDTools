@@ -240,7 +240,7 @@ std::vector<PatchVST> ReadSVD(std::istream &inFile)
 	if (!inFile.read(reinterpret_cast<char *>(&fileHeader), sizeof(fileHeader)))
 		return {};
 
-	if (fileHeader.magic != SVDHeader{}.magic)
+	if (fileHeader.magic != SVDHeader{}.magic || fileHeader.headerSize < 30)
 	{
 		std::cerr << "Not a valid SVD file!" << std::endl;
 		return {};
