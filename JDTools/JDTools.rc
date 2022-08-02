@@ -2,6 +2,13 @@
 //
 #include "resource.h"
 
+#define VER_HELPER_STRINGIZE(x) #x
+#define VER_STRINGIZE(x)        VER_HELPER_STRINGIZE(x)
+
+#define VER_FILEVERSION       VER_MAJORMAJOR,VER_MAJOR,VER_MINOR,VER_MINORMINOR
+#define VER_FILEVERSION_DOT   VER_MAJORMAJOR.VER_MAJOR.VER_MINOR.VER_MINORMINOR
+#define VER_FILEVERSION_STR   VER_STRINGIZE(VER_FILEVERSION_DOT)
+
 #define APSTUDIO_READONLY_SYMBOLS
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -51,8 +58,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,9,0,0
- PRODUCTVERSION 0,9,0,0
+ FILEVERSION VER_FILEVERSION
+ PRODUCTVERSION VER_FILEVERSION
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -69,12 +76,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Johannes Schultz"
             VALUE "FileDescription", "JDTools - Patch conversion utility for Roland JD-800 / JD-990"
-            VALUE "FileVersion", "0.9.0.0"
+            VALUE "FileVersion", VER_FILEVERSION_STR
             VALUE "InternalName", "JDTools.exe"
             VALUE "LegalCopyright", "Copyright (C) 2022 Johannes Schultz"
             VALUE "OriginalFilename", "JDTools.exe"
             VALUE "ProductName", "JDTools"
-            VALUE "ProductVersion", "0.9.0.0"
+            VALUE "ProductVersion", VER_FILEVERSION_STR
         END
     END
     BLOCK "VarFileInfo"

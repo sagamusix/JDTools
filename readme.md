@@ -81,6 +81,11 @@ List all the contents of a SysEx dump (or any of the other supported input forma
 
 # Version History
 
+## v0.10 (2022-08-02)
+
+- Conversion from an .svd or .bin file with more than 64 patches now splits the output into multiple files.
+- Avoid broken JD-800 SysEx when converting a tone from .bin / .svd / .svz with no waveform assigned, and don't warn about effect group A level if the group is not enabled.
+
 ## v0.9 (2022-08-01)
 
 - Convert to / from JD-08 .svd format. Note that these files typically contain 256 patches (all 4 banks of 64 patches). The JD-800, JD-990 and the JD-800 VST can only access the first 64 patches, Zenology can access all 256 of them. In a future version, splitting these files into four individual files for each bank will be possible.

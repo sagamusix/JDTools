@@ -345,7 +345,7 @@ int main(const int argc, char *argv[])
 
 	if (verb == "convert")
 	{
-		std::string sourceName, targetName, targetExt;
+		std::string_view sourceName, targetName, targetExt;
 		if (sourceDeviceType == DeviceType::JD800)
 			sourceName = "JD-800";
 		else if (sourceDeviceType == DeviceType::JD990)
@@ -395,7 +395,7 @@ int main(const int argc, char *argv[])
 				if (outFilename.size() > 4 && outFilename[outFilename.size() - 4] == '.')
 					outFilename = outFilename.substr(0, outFilename.size() - 3) + std::to_string(bank + 1) + outFilename.substr(outFilename.size() - 4);
 				else
-					outFilename += "." + std::to_string(bank + 1) + "." + targetExt;
+					outFilename += "." + std::to_string(bank + 1) + "." + std::string{targetExt};
 			}
 
 			std::ofstream outFile{ outFilename, std::ios::trunc | std::ios::binary };

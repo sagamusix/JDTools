@@ -2,6 +2,11 @@
 // Microsoft Visual C++ generated include file.
 // Used by JDTools.rc
 
+#define VER_MAJORMAJOR 0
+#define VER_MAJOR 10
+#define VER_MINOR 0
+#define VER_MINORMINOR 0
+
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
