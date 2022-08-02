@@ -345,7 +345,7 @@ int main(const int argc, char *argv[])
 
 	if (verb == "convert")
 	{
-		std::string sourceName, targetName;
+		std::string sourceName, targetName, targetExt;
 		if (sourceDeviceType == DeviceType::JD800)
 			sourceName = "JD-800";
 		else if (sourceDeviceType == DeviceType::JD990)
@@ -355,6 +355,7 @@ int main(const int argc, char *argv[])
 
 		if (targetType == InputFile::Type::SYX)
 		{
+			targetExt = "syx";
 			if (sourceDeviceType == DeviceType::JD800)
 				targetName = "JD-990";
 			else
@@ -362,155 +363,178 @@ int main(const int argc, char *argv[])
 		}
 		else if (targetType == InputFile::Type::SVZplugin)
 		{
+			targetExt = "bin";
 			targetName = "JD-800 VST";
 		}
 		else if (targetType == InputFile::Type::SVZhardware)
 		{
+			targetExt = "svz";
 			targetName = "ZC1";
 		}
 		else if (targetType == InputFile::Type::SVD)
 		{
+			targetExt = "svd";
 			targetName = "JD-08";
 		}
 
 		std::cout << "Converting " << sourceName << " patch format to " << targetName << "..." << std::endl;
 
-		std::string outFilename = argv[4];
-		std::ofstream outFile{outFilename, std::ios::trunc | std::ios::binary};
-
 		if (sourceDeviceType != DeviceType::JD800VST)
 			vstPatches.resize(64);
 
-		// Convert patches
-		uint32_t numPatches = static_cast<uint32_t>(vstPatches.size());
-		if (numPatches > 64 && targetType != InputFile::Type::SVZplugin && targetType != InputFile::Type::SVZhardware)
+		const uint32_t numPatches = static_cast<uint32_t>(vstPatches.size());
+		const uint32_t bankSize = (targetType == InputFile::Type::SVD) ? 256 : 64;
+		const uint32_t numBanks = (numPatches + bankSize - 1) / bankSize;
+		uint32_t sourcePatch = 0;
+
+		for (uint32_t bank = 0; bank < numBanks; bank++)
 		{
-			std::cerr << "File contains " << numPatches << " patches, only the first 64 will be converted." << std::endl;
-			numPatches = 64;
-		}
-		for (uint32_t patch = 0; patch < numPatches; patch++)
-		{
-			const uint32_t address800 = BASE_ADDR_800_PATCH_INTERNAL + ((patch * 0x03) << 7);
-			const uint32_t address990 = BASE_ADDR_990_PATCH_INTERNAL + (patch << 14);
-			if (sourceDeviceType == DeviceType::JD800)
+			std::string outFilename = argv[4];
+			if (numBanks > 1)
 			{
-				if (memory[address800] == UNDEFINED_MEMORY)
-					continue;
-				const Patch800 &p800 = *reinterpret_cast<const Patch800 *>(memory.data() + address800);
-				std::cout << "Converting I" << (patch / 8 + 1) << (patch % 8 + 1) << ": " << toString(p800.common.name) << std::endl;
-				if (targetType == InputFile::Type::SYX)
-				{
-					Patch990 p990;
-					ConvertPatch800To990(p800, p990);
-					WriteSysEx(outFile, address990, true, p990);
-				}
+				if (outFilename.size() > 4 && outFilename[outFilename.size() - 4] == '.')
+					outFilename = outFilename.substr(0, outFilename.size() - 3) + std::to_string(bank + 1) + outFilename.substr(outFilename.size() - 4);
 				else
-				{
-					ConvertPatch800ToVST(p800, vstPatches[patch]);
-				}
+					outFilename += "." + std::to_string(bank + 1) + "." + targetExt;
 			}
-			else if (sourceDeviceType == DeviceType::JD990)
+
+			std::ofstream outFile{ outFilename, std::ios::trunc | std::ios::binary };
+
+			// Convert patches
+			for (uint32_t destPatch = 0; destPatch < bankSize; destPatch++, sourcePatch++)
 			{
-				if (memory[address990] == UNDEFINED_MEMORY)
-					continue;
-				const Patch990 &p990 = *reinterpret_cast<const Patch990 *>(memory.data() + address990);
-				std::cout << "Converting I" << (patch / 8 + 1) << (patch % 8 + 1) << ": " << toString(p990.common.name) << std::endl;
-				Patch800 p800;
-				ConvertPatch990To800(p990, p800);
-				if (targetType == InputFile::Type::SYX)
-					WriteSysEx(outFile, address800, false, p800);
-				else
-					ConvertPatch800ToVST(p800, vstPatches[patch]);
-			}
-			else if (sourceDeviceType == DeviceType::JD800VST)
-			{
-				PatchVST &pVST = vstPatches[patch];
-				std::cout << "Converting I" << (patch / 8 + 1) << (patch % 8 + 1) << ": " << toString(pVST.name) << std::endl;
-				if (targetType == InputFile::Type::SYX)
+				if (sourcePatch >= numPatches)
+					break;
+
+				if (sourceDeviceType == DeviceType::JD800VST && targetType != InputFile::Type::SVZplugin)
 				{
-					Patch800 p800;
-					ConvertPatchVSTTo800(pVST, p800);
-					WriteSysEx(outFile, address800, false, p800);
-				}
-				else if(targetType == InputFile::Type::SVZhardware || targetType == InputFile::Type::SVD)
-				{
+					PatchVST &pVST = vstPatches[sourcePatch];
 					if (pVST.zenHeader.modelID1 != 3 || pVST.zenHeader.modelID2 != 5)
 					{
-						std::cerr << "Skipping patch, appears to be for another synth model!" << std::endl;
-						vstPatches.erase(vstPatches.begin() + patch);
-						patch--;
-						numPatches--;
+						std::cerr << "Ignoring patch, appears to be for another synth model!" << std::endl;
+						memset(&pVST, 0, sizeof(pVST));
+						pVST.zenHeader = PatchVST::DEFAULT_ZEN_HEADER;
+						pVST.name.fill(' ');
+					}
+				}
+
+				const uint32_t address800src = BASE_ADDR_800_PATCH_INTERNAL + ((sourcePatch * 0x03) << 7);
+				const uint32_t address990src = BASE_ADDR_990_PATCH_INTERNAL + (sourcePatch << 14);
+				const uint32_t address800dst = BASE_ADDR_800_PATCH_INTERNAL + ((destPatch * 0x03) << 7);
+				const uint32_t address990dst = BASE_ADDR_990_PATCH_INTERNAL + (destPatch << 14);
+				if (sourceDeviceType == DeviceType::JD800)
+				{
+					if (memory[address800src] == UNDEFINED_MEMORY)
+						continue;
+					const Patch800 &p800 = *reinterpret_cast<const Patch800 *>(memory.data() + address800src);
+					std::cout << "Converting I" << (destPatch / 8 + 1) << (destPatch % 8 + 1) << ": " << toString(p800.common.name) << std::endl;
+					if (targetType == InputFile::Type::SYX)
+					{
+						Patch990 p990;
+						ConvertPatch800To990(p800, p990);
+						WriteSysEx(outFile, address990dst, true, p990);
+					}
+					else
+					{
+						ConvertPatch800ToVST(p800, vstPatches[destPatch]);
+					}
+				}
+				else if (sourceDeviceType == DeviceType::JD990)
+				{
+					if (memory[address990src] == UNDEFINED_MEMORY)
+						continue;
+					const Patch990 &p990 = *reinterpret_cast<const Patch990 *>(memory.data() + address990src);
+					std::cout << "Converting I" << (destPatch / 8 + 1) << (destPatch % 8 + 1) << ": " << toString(p990.common.name) << std::endl;
+					Patch800 p800;
+					ConvertPatch990To800(p990, p800);
+					if (targetType == InputFile::Type::SYX)
+						WriteSysEx(outFile, address800dst, false, p800);
+					else
+						ConvertPatch800ToVST(p800, vstPatches[destPatch]);
+				}
+				else if (sourceDeviceType == DeviceType::JD800VST)
+				{
+					const PatchVST &pVST = vstPatches[sourcePatch];
+					std::cout << "Converting I" << (destPatch / 8 + 1) << (destPatch % 8 + 1) << ": " << toString(pVST.name) << std::endl;
+					if (targetType == InputFile::Type::SYX)
+					{
+						Patch800 p800;
+						ConvertPatchVSTTo800(pVST, p800);
+						WriteSysEx(outFile, address800dst, false, p800);
 					}
 				}
 			}
-		}
 
-		if (targetType == InputFile::Type::SVZplugin)
-		{
-			WriteSVZforPlugin(outFile, vstPatches);
-			return 0;
-		}
-		else if (targetType == InputFile::Type::SVZhardware)
-		{
-			WriteSVZforHardware(outFile, vstPatches);
-			return 0;
-		}
-		else if (targetType == InputFile::Type::SVD)
-		{
-			WriteSVD(outFile, vstPatches);
-			return 0;
-		}
+			if (targetType == InputFile::Type::SVZplugin)
+			{
+				WriteSVZforPlugin(outFile, vstPatches);
+				return 0;
+			}
+			else if (targetType == InputFile::Type::SVZhardware)
+			{
+				WriteSVZforHardware(outFile, vstPatches);
+				return 0;
+			}
+			else if (targetType == InputFile::Type::SVD)
+			{
+				WriteSVD(outFile, vstPatches);
+				return 0;
+			}
 
-		// Convert rhythm setup / special setup
-		const uint32_t address800 = BASE_ADDR_800_SETUP_INTERNAL;
-		const uint32_t address990 = BASE_ADDR_990_SETUP_INTERNAL;
-		if (sourceDeviceType == DeviceType::JD800 && memory[address800] != UNDEFINED_MEMORY)
-		{
-			const SpecialSetup800 &s800 = *reinterpret_cast<const SpecialSetup800 *>(memory.data() + address800);
-			SpecialSetup990 s990;
-			std::cout << "Converting special setup" << std::endl;
-			ConvertSetup800To990(s800, s990);
-			WriteSysEx(outFile, address990, true, s990);
-		}
-		else if (sourceDeviceType == DeviceType::JD990 && memory[address990] != UNDEFINED_MEMORY)
-		{
-			const SpecialSetup990 &s990 = *reinterpret_cast<const SpecialSetup990 *>(memory.data() + address990);
-			SpecialSetup800 s800;
-			std::cout << "Converting special setup: " << toString(s990.common.name) << std::endl;
-			ConvertSetup990To800(s990, s800);
-			WriteSysEx(outFile, address800, false, s800);
-		}
+			if(bank > 0)
+				continue;
 
-		// Convert temporary patches
-		for (const auto &p800 : temporaryPatches800)
-		{
-			std::cout << "Converting temporary patch: " << toString(p800.common.name) << std::endl;
-			Patch990 p990;
-			ConvertPatch800To990(p800, p990);
-			WriteSysEx(outFile, BASE_ADDR_990_PATCH_TEMPORARY, true, p990);
-		}
-		for (const auto &p990 : temporaryPatches990)
-		{
-			std::cout << "Converting temporary patch: " << toString(p990.common.name) << std::endl;
-			Patch800 p800;
-			ConvertPatch990To800(p990, p800);
-			WriteSysEx(outFile, BASE_ADDR_800_PATCH_TEMPORARY, false, p800);
-		}
-		if (sourceDeviceType == DeviceType::JD800 && memory[BASE_ADDR_800_SETUP_TEMPORARY] != UNDEFINED_MEMORY)
-		{
-			const SpecialSetup800 &s800 = *reinterpret_cast<const SpecialSetup800 *>(memory.data() + BASE_ADDR_800_SETUP_TEMPORARY);
-			SpecialSetup990 s990;
-			std::cout << "Converting special setup (temporary)" << std::endl;
-			ConvertSetup800To990(s800, s990);
-			WriteSysEx(outFile, BASE_ADDR_990_SETUP_TEMPORARY, true, s990);
-		}
-		else if (sourceDeviceType == DeviceType::JD990 && memory[BASE_ADDR_990_SETUP_TEMPORARY] != UNDEFINED_MEMORY)
-		{
-			const SpecialSetup990 &s990 = *reinterpret_cast<const SpecialSetup990 *>(memory.data() + BASE_ADDR_990_SETUP_TEMPORARY);
-			SpecialSetup800 s800;
-			std::cout << "Converting special setup (temporary): " << toString(s990.common.name) << std::endl;
-			ConvertSetup990To800(s990, s800);
-			WriteSysEx(outFile, BASE_ADDR_800_SETUP_TEMPORARY, false, s800);
+			// Convert rhythm setup / special setup
+			const uint32_t address800 = BASE_ADDR_800_SETUP_INTERNAL;
+			const uint32_t address990 = BASE_ADDR_990_SETUP_INTERNAL;
+			if (sourceDeviceType == DeviceType::JD800 && memory[address800] != UNDEFINED_MEMORY)
+			{
+				const SpecialSetup800 &s800 = *reinterpret_cast<const SpecialSetup800 *>(memory.data() + address800);
+				SpecialSetup990 s990;
+				std::cout << "Converting special setup" << std::endl;
+				ConvertSetup800To990(s800, s990);
+				WriteSysEx(outFile, address990, true, s990);
+			}
+			else if (sourceDeviceType == DeviceType::JD990 && memory[address990] != UNDEFINED_MEMORY)
+			{
+				const SpecialSetup990 &s990 = *reinterpret_cast<const SpecialSetup990 *>(memory.data() + address990);
+				SpecialSetup800 s800;
+				std::cout << "Converting special setup: " << toString(s990.common.name) << std::endl;
+				ConvertSetup990To800(s990, s800);
+				WriteSysEx(outFile, address800, false, s800);
+			}
+
+			// Convert temporary patches
+			for (const auto &p800 : temporaryPatches800)
+			{
+				std::cout << "Converting temporary patch: " << toString(p800.common.name) << std::endl;
+				Patch990 p990;
+				ConvertPatch800To990(p800, p990);
+				WriteSysEx(outFile, BASE_ADDR_990_PATCH_TEMPORARY, true, p990);
+			}
+			for (const auto &p990 : temporaryPatches990)
+			{
+				std::cout << "Converting temporary patch: " << toString(p990.common.name) << std::endl;
+				Patch800 p800;
+				ConvertPatch990To800(p990, p800);
+				WriteSysEx(outFile, BASE_ADDR_800_PATCH_TEMPORARY, false, p800);
+			}
+			if (sourceDeviceType == DeviceType::JD800 && memory[BASE_ADDR_800_SETUP_TEMPORARY] != UNDEFINED_MEMORY)
+			{
+				const SpecialSetup800 &s800 = *reinterpret_cast<const SpecialSetup800 *>(memory.data() + BASE_ADDR_800_SETUP_TEMPORARY);
+				SpecialSetup990 s990;
+				std::cout << "Converting special setup (temporary)" << std::endl;
+				ConvertSetup800To990(s800, s990);
+				WriteSysEx(outFile, BASE_ADDR_990_SETUP_TEMPORARY, true, s990);
+			}
+			else if (sourceDeviceType == DeviceType::JD990 && memory[BASE_ADDR_990_SETUP_TEMPORARY] != UNDEFINED_MEMORY)
+			{
+				const SpecialSetup990 &s990 = *reinterpret_cast<const SpecialSetup990 *>(memory.data() + BASE_ADDR_990_SETUP_TEMPORARY);
+				SpecialSetup800 s800;
+				std::cout << "Converting special setup (temporary): " << toString(s990.common.name) << std::endl;
+				ConvertSetup990To800(s990, s800);
+				WriteSysEx(outFile, BASE_ADDR_800_SETUP_TEMPORARY, false, s800);
+			}
 		}
 	}
 	else if (verb == "merge")

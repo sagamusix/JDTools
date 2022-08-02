@@ -556,4 +556,6 @@ struct PatchVST
 	uint8_t unison;                       // 1999, Extended feature
 
 	std::array<char, 20320> empty;  // Surely we will need patches to be able to grow to ten times their current size in the future!
+
+	static constexpr ZenHeader DEFAULT_ZEN_HEADER = { 3, 5, 0, 100, {} };
 };

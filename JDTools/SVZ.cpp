@@ -196,7 +196,7 @@ std::vector<PatchVST> ReadSVZforHardware(std::istream &inFile)
 		const auto patchCRC32 = mz_crc32(0, reinterpret_cast<unsigned char *>(&patch.name), 2048);
 		if (patchCRC32 != patchesCRC32[i])
 			std::cerr << "Warning, CRC32 mismatch for patch " << (i + 1) << std::endl;
-		patch.zenHeader = { 3, 5, 0, 100, {} };
+		patch.zenHeader = PatchVST::DEFAULT_ZEN_HEADER;
 		patch.empty.fill(0);
 	}
 	return vstPatches;
@@ -260,7 +260,7 @@ std::vector<PatchVST> ReadSVD(std::istream &inFile)
 	{
 		PatchVST &patch = vstPatches[i];
 		inFile.read(reinterpret_cast<char *>(&patch.zenHeader), 2048);
-		patch.zenHeader = { 3, 5, 0, 100, {} };
+		patch.zenHeader = PatchVST::DEFAULT_ZEN_HEADER;
 		patch.empty.fill(0);
 	}
 	return vstPatches;

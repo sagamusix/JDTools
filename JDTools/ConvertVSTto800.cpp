@@ -70,7 +70,7 @@ static void ConvertToneVSTTo800(const ToneVST &tVST, Tone800 &t800)
 
 	t800.wg.waveSource = 0;
 	t800.wg.waveformMSB = 0;
-	t800.wg.waveformLSB = tVST.wg.waveformLSB - 1;
+	t800.wg.waveformLSB = (tVST.wg.waveformLSB - 1) & 0x7F;
 	t800.wg.pitchCoarse = tVST.wg.pitchCoarse + 48;
 	t800.wg.pitchFine = tVST.wg.pitchFine + 50;
 	t800.wg.pitchRandom = tVST.wg.pitchRandom;
@@ -221,7 +221,7 @@ void ConvertPatchVSTTo800(const PatchVST &pVST, Patch800 &p800)
 	p800.midiTx.holdMode = 2;
 	p800.midiTx.dummy = 0;
 
-	if (pVST.effectsGroupA.effectsLevelGroupA != 127)
+	if (pVST.effectsGroupA.effectsLevelGroupA != 127 && pVST.effectsGroupA.groupAenabled)
 		std::cerr << "LOSSY CONVERSION! Effect Group A Level != 127: " << int(pVST.effectsGroupA.effectsLevelGroupA) << std::endl;
 	p800.effect.groupAsequence = pVST.effectsGroupA.groupAsequence.lsb;
 	p800.effect.groupBsequence = pVST.effectsGroupB.groupBsequence;

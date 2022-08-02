@@ -48,7 +48,7 @@ static void ConvertTone800ToVST(const Tone800 &t800, const bool enabled, const b
 	{
 		std::cerr << "LOSSY CONVERSION! Waveforms from ROM cards are not supported!" << std::endl;
 	}
-	tVST.wg.waveformLSB = t800.wg.waveformLSB + 1;
+	tVST.wg.waveformLSB = (t800.wg.waveformLSB + 1) & 0x7F;
 	tVST.wg.unknown1637_00 = 0;
 	tVST.wg.unknown1638_00 = 0;
 	tVST.wg.gain = 3;  // Extended feature
