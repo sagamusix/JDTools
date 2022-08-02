@@ -10,13 +10,13 @@
 #include <string_view>
 #include <vector>
 
-#include "convert.h"
-#include "InputFile.h"
-#include "SVZ.h"
+#include "JDTools.hpp"
+#include "InputFile.hpp"
+#include "SVZ.hpp"
 
-#include "jd800.h"
-#include "jd990.h"
-#include "jdvst.h"
+#include "JD-800.hpp"
+#include "JD-990.hpp"
+#include "JD-08.hpp"
 
 namespace
 {

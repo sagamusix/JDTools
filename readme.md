@@ -16,29 +16,31 @@ Figuring out the data structures shared by the plugin, SVZ hardware and SVD patc
 
 # Usage
 
+JDTools is a command line utility and has no Graphical User Interface. It can be invoked in the following ways:
+
 ## Conversion
 
 It is possible to convert between practically all format combinations:
 
-- JD-800 SysEx dump (SYX, MID) can be converted to...
+- JD-800 SysEx dumps (SYX, MID) can be converted to...
   - JD-990 SysEx dump (SYX)
   - JD-800 VST / Zenology patch bank (BIN)
   - JD-08 patch bank (SVD)
   - ZC1 patch bank (SVZ)
-- JD-990 SysEx dump (SYX, MID) can be converted to...
+- JD-990 SysEx dumps (SYX, MID) can be converted to...
   - JD-800 SysEx dump (SYX)
   - JD-800 VST / Zenology patch bank (BIN)
   - JD-08 patch bank (SVD)
   - ZC1 patch bank (SVZ)
-- JD-800 VST or Zenology patch bank (BIN) can be converted to... 
+- JD-800 VST or Zenology patch banks (BIN) can be converted to... 
   - JD-800 SysEx dump (SYX)
   - JD-08 patch bank (SVD)
   - ZC1 patch bank (SVZ)
-- JD-08 patch bank (SVD) can be converted to...
+- JD-08 patch banks (SVD) can be converted to...
   - JD-800 SysEx dump (SYX)
   - JD-800 VST or Zenology patch bank (BIN)
   - ZC1 patch bank (SVZ)
-- ZC1 patch bank (SVZ) can be converted to...
+- ZC1 patch banks (SVZ) can be converted to...
   - JD-800 SysEx dump (SYX)
   - JD-800 VST or Zenology patch bank (BIN)
   - JD-08 patch bank (SVD)

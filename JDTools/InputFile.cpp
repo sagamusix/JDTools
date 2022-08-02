@@ -2,7 +2,7 @@
 // 2022 by Johannes Schultz
 // License: BSD 3-clause
 
-#include "InputFile.h"
+#include "InputFile.hpp"
 
 InputFile::InputFile(std::istream &file)
 	: m_file{file}

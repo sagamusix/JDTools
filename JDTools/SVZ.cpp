@@ -2,7 +2,7 @@
 // 2022 by Johannes Schultz
 // License: BSD 3-clause
 
-#include "SVZ.h"
+#include "SVZ.hpp"
 
 #include "miniz.h"
 

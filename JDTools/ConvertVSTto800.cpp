@@ -2,8 +2,8 @@
 // 2022 by Johannes Schultz
 // License: BSD 3-clause
 
-#include "jd800.h"
-#include "jdvst.h"
+#include "JD-800.hpp"
+#include "JD-08.hpp"
 
 #include <algorithm>
 #include <iostream>

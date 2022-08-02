@@ -2,8 +2,8 @@
 // 2022 by Johannes Schultz
 // License: BSD 3-clause
 
-#include "jd800.h"
-#include "jd990.h"
+#include "JD-800.hpp"
+#include "JD-990.hpp"
 
 #include <algorithm>
 #include <iostream>

@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "jdvst.h"
+#include "JD-08.hpp"
 
 #include <iosfwd>
 #include <vector>

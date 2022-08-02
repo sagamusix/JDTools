@@ -176,15 +176,15 @@
     <ClCompile Include="SVZ.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="convert.h" />
-    <ClInclude Include="InputFile.h" />
-    <ClInclude Include="jd800.h" />
-    <ClInclude Include="jd990.h" />
-    <ClInclude Include="jdvst.h" />
+    <ClInclude Include="JDTools.hpp" />
+    <ClInclude Include="InputFile.hpp" />
+    <ClInclude Include="JD-800.hpp" />
+    <ClInclude Include="JD-990.hpp" />
+    <ClInclude Include="JD-08.hpp" />
     <ClInclude Include="miniz.h" />
-    <ClInclude Include="PrecomputedTablesVST.h" />
+    <ClInclude Include="PrecomputedTablesVST.hpp" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="SVZ.h" />
+    <ClInclude Include="SVZ.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="JDTools.rc" />
