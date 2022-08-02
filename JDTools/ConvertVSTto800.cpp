@@ -20,6 +20,8 @@ static bool MapToArrayIndex(const T value, const T (&values)[N], uint8_t &target
 			return true;
 		if (v < value)
 			fallback = target;
+		else if (value > values[fallback] && (value - values[fallback]) > (v - value))
+			fallback = target;
 		target++;
 	}
 	target = fallback;
@@ -30,7 +32,7 @@ template<typename T, size_t N>
 static void ConvertEQBand(const T(&freqTable)[N], uint8_t &freq, uint8_t &gain, uint16_t srcFreq, int16_t srcGain, const bool enabled, const std::string_view name)
 {
 	if (!MapToArrayIndex(srcFreq, freqTable, freq) && srcFreq != 0 && enabled)
-		std::cerr << "LOSSY CONVERSION! Unsupported EQ " << name << " frequency value: " << srcFreq << " Hz" << std::endl;
+		std::cerr << "LOSSY CONVERSION! Unsupported EQ " << name << " frequency value: " << srcFreq << " Hz, changing to " << freqTable[freq] << " Hz" << std::endl;
 
 	gain = static_cast<uint8_t>(enabled ? std::clamp(srcGain / 10, -15, 15) + 15 : 0);
 
