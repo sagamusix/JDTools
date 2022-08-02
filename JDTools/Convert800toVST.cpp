@@ -5,17 +5,9 @@
 #include "JD-800.hpp"
 #include "JD-08.hpp"
 #include "PrecomputedTablesVST.hpp"
+#include "Utils.hpp"
 
 #include <iostream>
-
-template<typename T, size_t N>
-static T SafeTable(const T (&table)[N], uint8_t offset)
-{
-	if (offset < N)
-		return table[offset];
-	else
-		return table[N - 1];
-}
 
 template<typename T, size_t N>
 static T SignedTable(const T (&table)[N], int8_t offset)

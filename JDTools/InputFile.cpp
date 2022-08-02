@@ -3,31 +3,32 @@
 // License: BSD 3-clause
 
 #include "InputFile.hpp"
+#include "Utils.hpp"
 
 InputFile::InputFile(std::istream &file)
 	: m_file{file}
 {
-	char magic[4] = {};
-	m_file.read(magic, 4);
+	std::array<char, 4> magic{};
+	Read(m_file, magic);
 
-	if (!std::memcmp(magic, "MThd", 4))
+	if (CompareMagic(magic, "MThd"))
 	{
 		m_type = Type::MID;
 	}
-	else if (!std::memcmp(magic, "SVZa", 4))
+	else if (CompareMagic(magic, "SVZa"))
 	{
 		m_file.seekg(16);
-		char type[4] = {};
-		m_file.read(type, 4);
-		if (!std::memcmp(type, "EXTa", 4))
+		std::array<char, 4> type{};
+		Read(m_file, type);
+		if (CompareMagic(type, "EXTa"))
 			m_type = Type::SVZplugin;
-		else if (!std::memcmp(type, "DIFa", 4))
+		else if (CompareMagic(type, "DIFa"))
 			m_type = Type::SVZhardware;
 	}
 	else if (magic[2] == 'S' && magic[3] == 'V')
 	{
-		m_file.read(magic, 4);
-		if (!std::memcmp(magic, "D5\x00\x00", 4))
+		Read(m_file, magic);
+		if (CompareMagic(magic, "D5\x00\x00"))
 			m_type = Type::SVD;
 	}
 
@@ -51,11 +52,11 @@ std::vector<uint8_t> InputFile::NextSysExMessage()
 		{
 			if (!m_trackBytesRemain)
 			{
-				char magic[4] = {};
-				m_file.read(magic, 4);
+				std::array<char, 4> magic{};
+				Read(m_file, magic);
 				if (m_file.eof())
 					return {};
-				if (std::memcmp(magic, "MTrk", 4))
+				if (!CompareMagic(magic, "MTrk"))
 				{
 					std::cerr << "Malformed MIDI file? Unexpected track header value" << std::endl;
 					return {};
@@ -104,8 +105,8 @@ std::vector<uint8_t> InputFile::NextSysExMessage()
 				case 0x07:
 				{
 					uint32_t sysExLength = ReadVarInt();
-					std::vector<uint8_t> message(sysExLength);
-					m_file.read(reinterpret_cast<char *>(message.data()), message.size());
+					std::vector<uint8_t> message;
+					ReadVector(m_file, message, sysExLength);
 					m_trackBytesRemain -= sysExLength;
 					if (!message.empty() && message.back() != 0xF7)
 					{
@@ -163,22 +164,22 @@ uint32_t InputFile::ReadVarInt()
 
 uint32_t InputFile::ReadUint32BE()
 {
-	char bytes[4] = {};
-	m_file.read(bytes, 4);
+	std::array<uint8_t, 4> bytes{};
+	Read(m_file, bytes);
 	m_trackBytesRemain -= 4;
-	return (static_cast<uint8_t>(bytes[0]) << 24)
-		| (static_cast<uint8_t>(bytes[1]) << 16)
-		| (static_cast<uint8_t>(bytes[2]) << 8)
-		| static_cast<uint8_t>(bytes[3]);
+	return (bytes[0] << 24)
+		| (bytes[1] << 16)
+		| (bytes[2] << 8)
+		| bytes[3];
 }
 
 uint16_t InputFile::ReadUint16BE()
 {
-	char bytes[2] = {};
-	m_file.read(bytes, 2);
+	std::array<uint8_t, 2> bytes;
+	Read(m_file, bytes);
 	m_trackBytesRemain -= 2;
-	return (static_cast<uint8_t>(bytes[0]) << 8)
-		| static_cast<uint8_t>(bytes[1]);
+	return (bytes[0] << 8)
+		| bytes[1];
 }
 
 uint8_t InputFile::ReadUint8()

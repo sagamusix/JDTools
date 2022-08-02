@@ -2,6 +2,15 @@
 // 2022 by Johannes Schultz
 // License: BSD 3-clause
 
+#include "JDTools.hpp"
+#include "InputFile.hpp"
+#include "SVZ.hpp"
+#include "Utils.hpp"
+
+#include "JD-800.hpp"
+#include "JD-990.hpp"
+#include "JD-08.hpp"
+
 #include <algorithm>
 #include <cstdint>
 #include <fstream>
@@ -9,14 +18,6 @@
 #include <string>
 #include <string_view>
 #include <vector>
-
-#include "JDTools.hpp"
-#include "InputFile.hpp"
-#include "SVZ.hpp"
-
-#include "JD-800.hpp"
-#include "JD-990.hpp"
-#include "JD-08.hpp"
 
 namespace
 {
@@ -116,7 +117,7 @@ static void WriteSysEx(std::ostream &f, uint32_t outAddress, const bool isJD990,
 		checksum = (~checksum + 1) & 0x7F;
 		outMessage.push_back(checksum);
 		outMessage.push_back(0xF7);
-		f.write(reinterpret_cast<const char *>(outMessage.data()), outMessage.size());
+		WriteVector(f, outMessage);
 
 		outAddress += static_cast<uint32_t>(amountToCopy);
 		size -= amountToCopy;
@@ -208,7 +209,7 @@ int main(const int argc, char *argv[])
 	for (int i = 0; i < numInputFiles; i++)
 	{
 		const std::string inFilename = argv[firstFileParam + i];
-		std::ifstream inFile(inFilename, std::ios::binary);
+		std::ifstream inFile{inFilename, std::ios::binary};
 		if (!inFile)
 		{
 			std::cout << "Could not open " << inFilename << " for reading!" << std::endl;
@@ -375,7 +376,7 @@ int main(const int argc, char *argv[])
 		std::cout << "Converting " << sourceName << " patch format to " << targetName << "..." << std::endl;
 
 		std::string outFilename = argv[4];
-		std::ofstream outFile(outFilename, std::ios::trunc | std::ios::binary);
+		std::ofstream outFile{outFilename, std::ios::trunc | std::ios::binary};
 
 		if (sourceDeviceType != DeviceType::JD800VST)
 			vstPatches.resize(64);
@@ -536,7 +537,7 @@ int main(const int argc, char *argv[])
 					outFilename += "." + std::to_string(bank + 1);
 			}
 
-			std::ofstream outFile(outFilename, std::ios::trunc | std::ios::binary);
+			std::ofstream outFile{outFilename, std::ios::trunc | std::ios::binary};
 
 			for (uint32_t destPatch = 0; destPatch < 64; destPatch++, sourcePatch++)
 			{

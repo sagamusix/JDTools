@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "Utils.hpp"
+
 #include <array>
 #include <cstdint>
 
@@ -22,27 +24,6 @@
 // but not setting them to their expected values will break various features of a patch.
 // Unknown variable names contain an offset relative to the first byte in PatchVST::CommonPrecomputed, and the expected byte value in hex.
 // For structs that are repeated for all four tones, the offset is always for the first tone.
-
-struct uint16le
-{
-	uint8_t lsb, msb;
-
-	constexpr uint16le(const uint16_t value = 0) noexcept
-	{
-		lsb = static_cast<uint8_t>(value);
-		msb = static_cast<uint8_t>(value >> 8);
-	}
-
-	constexpr operator uint16_t() const noexcept
-	{
-		return lsb | (msb << 8);
-	}
-
-	constexpr uint16_t get() const noexcept
-	{
-		return *this;
-	}
-};
 
 struct ToneVSTPrecomputed
 {

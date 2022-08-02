@@ -4,6 +4,7 @@
 
 #include "JD-800.hpp"
 #include "JD-990.hpp"
+#include "Utils.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -89,7 +90,7 @@ static void ConvertTone990To800(const uint8_t toneControlSource1, const uint8_t 
 	t800.lfo1.rate = t990.lfo1.rate;
 	t800.lfo1.delay = t990.lfo1.delay;
 	t800.lfo1.fade = t990.lfo1.fade;
-	t800.lfo1.waveform = LfoWaveform990to800[t990.lfo1.waveform % std::size(LfoWaveform990to800)];
+	t800.lfo1.waveform = SafeTable(LfoWaveform990to800, t990.lfo1.waveform);
 	t800.lfo1.offset = t990.lfo1.offset;
 	t800.lfo1.keyTrigger = t990.lfo1.keyTrigger;
 	if (t800.lfo1.waveform & 0x80)
@@ -101,7 +102,7 @@ static void ConvertTone990To800(const uint8_t toneControlSource1, const uint8_t 
 	t800.lfo2.rate = t990.lfo2.rate;
 	t800.lfo2.delay = t990.lfo2.delay;
 	t800.lfo2.fade = t990.lfo2.fade;
-	t800.lfo2.waveform = LfoWaveform990to800[t990.lfo2.waveform % std::size(LfoWaveform990to800)];
+	t800.lfo2.waveform = SafeTable(LfoWaveform990to800, t990.lfo2.waveform);
 	t800.lfo2.offset = t990.lfo2.offset;
 	t800.lfo2.keyTrigger = t990.lfo2.keyTrigger;
 	if (t800.lfo2.waveform & 0x80)

@@ -185,6 +185,7 @@
     <ClInclude Include="PrecomputedTablesVST.hpp" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="SVZ.hpp" />
+    <ClInclude Include="Utils.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="JDTools.rc" />

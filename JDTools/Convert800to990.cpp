@@ -4,6 +4,7 @@
 
 #include "JD-800.hpp"
 #include "JD-990.hpp"
+#include "Utils.hpp"
 
 #include <cstring>
 
@@ -76,7 +77,7 @@ static void ConvertTone800To990(const uint8_t aTouchBend800, const Tone800 &t800
 
 	static constexpr uint8_t LfoWaveform800to990[] = { 0, 2, 3, 5, 6 };
 
-	t990.lfo1.waveform = LfoWaveform800to990[t800.lfo1.waveform % std::size(LfoWaveform800to990)];
+	t990.lfo1.waveform = SafeTable(LfoWaveform800to990, t800.lfo1.waveform);
 	t990.lfo1.rate = t800.lfo1.rate;
 	t990.lfo1.delay = t800.lfo1.delay;
 	t990.lfo1.fade = t800.lfo1.fade;
@@ -86,7 +87,7 @@ static void ConvertTone800To990(const uint8_t aTouchBend800, const Tone800 &t800
 	t990.lfo1.depthTVF = (t800.tvf.lfoSelect == 0) ? t800.tvf.lfoDepth : 50;
 	t990.lfo1.depthTVA = (t800.tva.lfoSelect == 0) ? t800.tva.lfoDepth : 50;
 
-	t990.lfo2.waveform = LfoWaveform800to990[t800.lfo2.waveform % std::size(LfoWaveform800to990)];
+	t990.lfo2.waveform = SafeTable(LfoWaveform800to990, t800.lfo2.waveform);
 	t990.lfo2.rate = t800.lfo2.rate;
 	t990.lfo2.delay = t800.lfo2.delay;
 	t990.lfo2.fade = t800.lfo2.fade;

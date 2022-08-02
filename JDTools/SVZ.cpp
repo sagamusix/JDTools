@@ -3,6 +3,7 @@
 // License: BSD 3-clause
 
 #include "SVZ.hpp"
+#include "Utils.hpp"
 
 #include "miniz.h"
 
@@ -12,24 +13,6 @@
 
 namespace
 {
-	struct uint32le
-	{
-		std::array<uint8_t, 4> bytes;
-
-		constexpr uint32le(const uint32_t value = 0) noexcept
-		{
-			bytes[0] = static_cast<uint8_t>(value);
-			bytes[1] = static_cast<uint8_t>(value >> 8);
-			bytes[2] = static_cast<uint8_t>(value >> 16);
-			bytes[3] = static_cast<uint8_t>(value >> 24);
-		}
-
-		constexpr operator uint32_t() const noexcept
-		{
-			return bytes[0] | (bytes[1] << 8) | (bytes[2] << 16) | (bytes[3] << 24);
-		}
-	};
-
 	struct SVZHeaderPlugin
 	{
 		std::array<char, 4> SVZa = { 'S', 'V', 'Z', 'a' };
@@ -129,25 +112,13 @@ namespace
 	};
 }
 
-template<typename T>
-static void WriteStruct(std::ostream& outFile, const T &value)
-{
-	outFile.write(reinterpret_cast<const char *>(&value), sizeof(T));
-}
-
-template<typename T>
-static void WriteVector(std::ostream &outFile, const std::vector<T> &value)
-{
-	outFile.write(reinterpret_cast<const char *>(value.data()), value.size() * sizeof(T));
-}
-
 std::vector<PatchVST> ReadSVZforPlugin(std::istream &inFile)
 {
 	static_assert(sizeof(SVZHeaderPlugin) == 96);
 	static_assert(sizeof(SVDxHeader) == 32);
 
 	SVZHeaderPlugin fileHeader;
-	if (!inFile.read(reinterpret_cast<char *>(&fileHeader), sizeof(fileHeader)))
+	if (!Read(inFile, fileHeader))
 		return {};
 
 	if (!fileHeader.IsValid())
@@ -162,8 +133,8 @@ std::vector<PatchVST> ReadSVZforPlugin(std::istream &inFile)
 	}
 
 	uint32_t compressedSize = fileHeader.compressedSize1 - 0x40;
-	std::vector<unsigned char> compressed(compressedSize);
-	if (!inFile.read(reinterpret_cast<char *>(compressed.data()), compressed.size()))
+	std::vector<unsigned char> compressed;
+	if (!ReadVector(inFile, compressed, compressedSize))
 	{
 		std::cerr << "Can't read compressed data!" << std::endl;
 		return {};
@@ -198,7 +169,7 @@ std::vector<PatchVST> ReadSVZforHardware(std::istream &inFile)
 {
 	static_assert(sizeof(SVZHeaderHardware) == 116);
 	SVZHeaderHardware fileHeader;
-	if (!inFile.read(reinterpret_cast<char *>(&fileHeader), sizeof(fileHeader)))
+	if (!Read(inFile, fileHeader))
 		return {};
 
 	if (!fileHeader.IsValid())
@@ -214,8 +185,8 @@ std::vector<PatchVST> ReadSVZforHardware(std::istream &inFile)
 	}
 
 	const uint32_t numPatches = fileHeader.numPatches;
-	std::vector<uint32le> patchesCRC32(numPatches);
-	inFile.read(reinterpret_cast<char *>(patchesCRC32.data()), numPatches * sizeof(uint32le));
+	std::vector<uint32le> patchesCRC32;
+	ReadVector(inFile, patchesCRC32, numPatches);
 
 	std::vector<PatchVST> vstPatches(numPatches);
 	for (uint32_t i = 0; i < numPatches; i++)
@@ -237,7 +208,7 @@ std::vector<PatchVST> ReadSVD(std::istream &inFile)
 	static_assert(sizeof(SVDHeaderEntry) == 16);
 	
 	SVDHeader fileHeader;
-	if (!inFile.read(reinterpret_cast<char *>(&fileHeader), sizeof(fileHeader)))
+	if (!Read(inFile, fileHeader))
 		return {};
 
 	if (fileHeader.magic != SVDHeader{}.magic || fileHeader.headerSize < 30)
@@ -250,7 +221,7 @@ std::vector<PatchVST> ReadSVD(std::istream &inFile)
 	while (headerOffset < fileHeader.headerSize)
 	{
 		SVDHeaderEntry entry;
-		if (!inFile.read(reinterpret_cast<char *>(&entry), sizeof(entry)))
+		if (!Read(inFile, entry))
 			return {};
 		headerOffset += sizeof(entry);
 		if (entry.type == std::array<char, 4>{ 'P', 'A', 'T', 'a' } && entry.dd07 == SVDHeaderEntry{}.dd07)
@@ -269,7 +240,7 @@ std::vector<PatchVST> ReadSVD(std::istream &inFile)
 
 	inFile.seekg(patchOffset);
 	SVDPatchHeader patchHeader;
-	if (!inFile.read(reinterpret_cast<char *>(&patchHeader), sizeof(patchHeader)))
+	if (!Read(inFile, patchHeader))
 		return {};
 
 	if (patchHeader.patchSize != 2048)
@@ -320,7 +291,7 @@ void WriteSVZforPlugin(std::ostream &outFile, const std::vector<PatchVST> &vstPa
 	fileHeader.compressedCRC32 = compressedCRC32;
 	fileHeader.uncompressedSize = uncompressedSize;
 
-	WriteStruct(outFile, fileHeader);
+	Write(outFile, fileHeader);
 	WriteVector(outFile, compressed);
 }
 
@@ -331,7 +302,7 @@ void WriteSVZforHardware(std::ostream &outFile, const std::vector<PatchVST> &vst
 	fileHeader.numPatches = numPatches;
 	fileHeader.bankSize = static_cast<uint32_t>(16 + (sizeof(uint32le) + 2048) * numPatches);
 	fileHeader.bankSizeTruncated = fileHeader.bankSize & 0x1FF;
-	outFile.write(reinterpret_cast<const char *>(&fileHeader), sizeof(fileHeader));
+	Write(outFile, fileHeader);
 
 	std::vector<uint32le> patchesCRC32(numPatches);
 	std::vector<std::array<unsigned char, 2048>> patches(numPatches);
@@ -362,9 +333,9 @@ void WriteSVD(std::ostream &outFile, const std::vector<PatchVST> &vstPatches)
 	SVDPatchHeader patchHeader{};
 	patchHeader.numPatches = static_cast<uint32_t>(vstPatches.size());
 
-	outFile.write(reinterpret_cast<const char *>(&fileHeader), sizeof(fileHeader));
-	outFile.write(reinterpret_cast<const char *>(&entry), sizeof(entry));
-	outFile.write(reinterpret_cast<const char *>(&patchHeader), sizeof(patchHeader));
+	Write(outFile, fileHeader);
+	Write(outFile, entry);
+	Write(outFile, patchHeader);
 
 	std::array<char, 2048> patchData{};
 	patchData[4] = 1;
@@ -375,9 +346,9 @@ void WriteSVD(std::ostream &outFile, const std::vector<PatchVST> &vstPatches)
 	for (auto &patch : vstPatches)
 	{
 		std::memcpy(patchData.data() + 16, &patch.name, 2016);
-		outFile.write(patchData.data(), patchData.size());
+		Write(outFile, patchData);
 	}
 
 	std::array<char, 6> footer{ 0, 0, 0, 0, 1, 1 };
-	outFile.write(footer.data(), footer.size());
+	Write(outFile, footer);
 }
