@@ -114,5 +114,5 @@ JDTools is provided under the BSD 3-clause license. JDTools makes use of miniz, 
 
 # Building
 
-This project is written in C++20. Currently only Visual Studio 2019 project is provided, but the code is platform-independent and should be trivial to convert to any other build system.
+This project is written in C++ 20. For building, the cross-platform CMake project, or alternatively the Visual Studio 2019 solution for Windows can be used.
 

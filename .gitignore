@@ -1,5 +1,7 @@
 .vs
 Debug
 Release
+x64
+out
 *.user
 *.aps
