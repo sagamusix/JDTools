@@ -51,7 +51,7 @@ By invoking `JDTools convert syx <input.file> <output.syx>`, the input file is c
 
 By invoking `JDTools convert bin <input.file> <output.bin>`, the input file is converted to the JD-800 VST patch bank format (BIN).
 
-By invoking `JDTools convert svd <input.file> <JD08Backup.svd>`, the input file is converted to the JD-08 patch bank format (SVZ). The provided output file must be an **already existing** JD08Backup.svd file obtained from your JD-08. The file is then overwritten, but its contents are replaced with the new patch data. The output file should be named JD08Backup.svd so that the JD-08 can find it.
+By invoking `JDTools convert svd <input.file> <JD08Backup.svd>`, the input file is converted to the JD-08 patch bank format (SVD). The provided output file must be an **already existing** JD08Backup.svd file obtained from your JD-08. The file is then overwritten, but its contents are replaced with the new patch data. The output file should be named JD08Backup.svd so that the JD-08 can find it.
 
 By invoking `JDTools convert svz <input.file> <output.svz>`, the input file is converted to the ZC1 hardware patch bank format (SVZ).
 
@@ -84,7 +84,7 @@ List all the contents of a SysEx dump (or any of the other supported input forma
 ## v0.11 (2022-08-03)
 
 - Conversion to JD-08 format is more difficult than anticipated. As a result, the conversion process was changed so that the provided output file must be an **already existing** JD08Backup.svd file obtained from your JD-08. The file is then overwritten, but its contents are replaced with the new patch data.
-- Recognize JD-08 effect group A pan feature and warn about it during conversion
+- Recognize JD-08 effect group A pan feature and warn about it during conversion.
 - When converting a bank to BIN / SVZ / SVD, but the target format required smaller banks than the input file provided, only the first bank was written.
 
 ## v0.10 (2022-08-02)
