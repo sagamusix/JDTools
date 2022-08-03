@@ -223,6 +223,8 @@ void ConvertPatchVSTTo800(const PatchVST &pVST, Patch800 &p800)
 
 	if (pVST.effectsGroupA.effectsLevelGroupA != 127 && pVST.effectsGroupA.groupAenabled)
 		std::cerr << "LOSSY CONVERSION! Effect Group A Level != 127: " << int(pVST.effectsGroupA.effectsLevelGroupA) << std::endl;
+	if (pVST.effectsGroupA.panningGroupA != 64 && pVST.effectsGroupA.groupAenabled)
+		std::cerr << "LOSSY CONVERSION! Effect Group A Pan != 64: " << int(pVST.effectsGroupA.panningGroupA) << std::endl;
 	p800.effect.groupAsequence = pVST.effectsGroupA.groupAsequence.lsb;
 	p800.effect.groupBsequence = pVST.effectsGroupB.groupBsequence;
 	

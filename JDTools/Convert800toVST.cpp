@@ -349,7 +349,7 @@ void ConvertPatch800ToVST(const Patch800 &p800, PatchVST &pVST)
 	pVST.effectsGroupA.enhancerEnabled = BlockEnabledA[EnhancerPos[p800.effect.groupAsequence % 24u]];
 	pVST.effectsGroupA.enhancerSens = p800.effect.enhancerSens;
 	pVST.effectsGroupA.enhancerMix = p800.effect.enhancerMix;
-	pVST.effectsGroupA.unknown108_0x40 = 64;
+	pVST.effectsGroupA.panningGroupA = 64;
 	pVST.effectsGroupA.effectsLevelGroupA = 127;  // Extended feature
 
 	ConvertTone800ToVST(p800.toneA, p800.common.layerTone & 1, p800.common.activeTone & 1, pVST.tone[0]);

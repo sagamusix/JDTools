@@ -455,7 +455,7 @@ struct PatchVST
 			enhancerEnabled,
 			enhancerSens,
 			enhancerMix,
-			unknown108_0x40,
+			panningGroupA,       // Extended feature, JD-08 only
 			effectsLevelGroupA;  // Extended feature (0...127)
 	};
 
