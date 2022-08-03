@@ -324,8 +324,11 @@ void WriteSVZforHardware(std::ostream &outFile, const std::vector<PatchVST> &vst
 
 void WriteSVD(std::ostream &outFile, const std::vector<PatchVST> &vstPatches, const std::vector<char> &originalSVDfile)
 {
+	// The JD-08 appears to reject SVD files that miss the PRFa, SYSa and/or DIFa chunks.
+	// Even if they only consist of the 16-byte header similar to the SVDPatchHeader struct and zeroing out the size fields in that header,
+	// the device just starts acting strangely. So the only soluation for now is to take an existing SVD file and replace the patch data inside.
 	SVDHeader fileHeader = *reinterpret_cast<const SVDHeader *>(originalSVDfile.data());
-	if (originalSVDfile.size() < 32 || fileHeader.magic != SVDHeader{}.magic || fileHeader.headerSize < 30)
+	if (originalSVDfile.size() < 32 || fileHeader.magic != SVDHeader{}.magic || fileHeader.headerSize < 30 || fileHeader.headerSize > originalSVDfile.size() - 2)
 	{
 		std::cerr << "Output file must be a valid JD-08 backup SVD file!" << std::endl;
 		// File was already opened for writing... preserve original contents
