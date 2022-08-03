@@ -466,22 +466,13 @@ int main(const int argc, char *argv[])
 			}
 
 			if (targetType == InputFile::Type::SVZplugin)
-			{
 				WriteSVZforPlugin(outFile, vstPatches);
-				return 0;
-			}
 			else if (targetType == InputFile::Type::SVZhardware)
-			{
 				WriteSVZforHardware(outFile, vstPatches);
-				return 0;
-			}
 			else if (targetType == InputFile::Type::SVD)
-			{
 				WriteSVD(outFile, vstPatches);
-				return 0;
-			}
 
-			if(bank > 0)
+			if(bank > 0 || (targetType != InputFile::Type::SYX && targetType != InputFile::Type::MID))
 				continue;
 
 			// Convert rhythm setup / special setup
