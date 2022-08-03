@@ -73,7 +73,8 @@ JDTools convert bin <input> <output>
 JDTools convert svd <input> <JD08Backup.svd>
   Converts from JD-800 SysEx dump (SYX / MID), JD-990 SysEx dump (SYX / MID),
   JD-800 VST BIN or ZC1 SVZ file to JD-08 SVD file.
-  The output file should be named JD08Backup.svd so that the JD-08 can find it.
+  The output file should be named JD08Backup.svd so that the JD-08 can find it,
+  and must be a valid, existing JD-08 backup file to overwrite.
 
 JDTools convert svz <input> <output>
   Converts from JD-800 SysEx dump (SYX / MID), JD-990 SysEx dump (SYX / MID),
@@ -345,7 +346,9 @@ int main(const int argc, char *argv[])
 
 	if (verb == "convert")
 	{
+		const std::string_view outFilenameBase = argv[4];
 		std::string_view sourceName, targetName, targetExt;
+		std::vector<char> originalSVDfile;
 		if (sourceDeviceType == DeviceType::JD800)
 			sourceName = "JD-800";
 		else if (sourceDeviceType == DeviceType::JD990)
@@ -375,6 +378,24 @@ int main(const int argc, char *argv[])
 		{
 			targetExt = "svd";
 			targetName = "JD-08";
+
+			std::ifstream inFile{std::string{outFilenameBase}, std::ios::binary};
+			if (!inFile)
+			{
+				std::cout << "Could not open " << outFilenameBase << " for reading! An original JD-08 backup file is required to write the patch data into." << std::endl;
+				return 2;
+			}
+
+			if (ReadSVD(inFile).empty())
+			{
+				std::cout << outFilenameBase << " does not appear to be a valid SVD file! An original JD-08 backup file is required to write the patch data into." << std::endl;
+				return 2;
+			}
+
+			inFile.seekg(0, std::ios::end);
+			const auto size = static_cast<size_t>(inFile.tellg());
+			inFile.seekg(0);
+			ReadVector(inFile, originalSVDfile, size);
 		}
 
 		std::cout << "Converting " << sourceName << " patch format to " << targetName << "..." << std::endl;
@@ -389,7 +410,7 @@ int main(const int argc, char *argv[])
 
 		for (uint32_t bank = 0; bank < numBanks; bank++)
 		{
-			std::string outFilename = argv[4];
+			std::string outFilename{outFilenameBase};
 			if (numBanks > 1)
 			{
 				if (outFilename.size() > 4 && outFilename[outFilename.size() - 4] == '.')
@@ -470,7 +491,7 @@ int main(const int argc, char *argv[])
 			else if (targetType == InputFile::Type::SVZhardware)
 				WriteSVZforHardware(outFile, vstPatches);
 			else if (targetType == InputFile::Type::SVD)
-				WriteSVD(outFile, vstPatches);
+				WriteSVD(outFile, vstPatches, originalSVDfile);
 
 			if(bank > 0 || (targetType != InputFile::Type::SYX && targetType != InputFile::Type::MID))
 				continue;

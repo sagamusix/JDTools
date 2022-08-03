@@ -12,7 +12,7 @@ The tool can load both SYX files (raw SysEx dumps) and MID / SMF files (Standard
 After the basic functionality was done, I wondered what would be required to support the JD-800 VST plugin or the JD-08 as well - turns out, quite a lot! Nevertheless, I managed to add support for them as well, so you can convert original JD-800 patches to the plugin's format (as long as they don't use ROM card waveforms), and also convert plugin banks to use with the original JD-800 (as long as they don't use extended features such as unison or tempo-synced LFOs).
 As the plugin appears to be based on Roland's ZenCore engine, don't expect conversions that sound 100% identical (there are well-known differences). Some parameters seem to have much lower internal precision than on a real JD-800. On the upside, the converted files also work with the Zenology plugin. But as the conversion process is quite complex, it's always possible there is a bug, so please report those if you find any.
 
-Figuring out the data structures shared by the plugin, SVZ hardware and SVD patch formats was a lot of work, so if you find this tool useful, please consider [donating](https://paypal.me/JohannesSchultz) a few bucks.
+Figuring out the data structures shared by the plugin, SVZ and SVD patch formats was a lot of work, so if you find this tool useful, please consider [donating](https://paypal.me/JohannesSchultz) a few bucks.
 
 # Usage
 
@@ -47,11 +47,11 @@ It is possible to convert between practically all format combinations:
 
 The input format of the conversion is determined automatically, but due to the different output options, the desired target format has to be specified explicitly.
 
-By invoking `JDTools convert syx <input.file> <output.syx>`, the input file is converted to a SysEx dump (so if the source is a JD-800 SysEx dump, the output file is a JD-990 SysEx dump, in all other cases the output is a JD-800 SysEx dump).
+By invoking `JDTools convert syx <input.file> <output.syx>`, the input file is converted to a SysEx dump. If the source is a JD-800 SysEx dump, the output file is a JD-990 SysEx dump, in all other cases the output is a JD-800 SysEx dump.
 
 By invoking `JDTools convert bin <input.file> <output.bin>`, the input file is converted to the JD-800 VST patch bank format (BIN).
 
-By invoking `JDTools convert svd <input.file> <JD08Backup.svd>`, the input file is converted to the JD-08 patch bank format (SVZ). The output file should be named JD08Backup.svd so that the JD-08 can find it.
+By invoking `JDTools convert svd <input.file> <JD08Backup.svd>`, the input file is converted to the JD-08 patch bank format (SVZ). The provided output file must be an **already existing** JD08Backup.svd file obtained from your JD-08. The file is then overwritten, but its contents are replaced with the new patch data. The output file should be named JD08Backup.svd so that the JD-08 can find it.
 
 By invoking `JDTools convert svz <input.file> <output.svz>`, the input file is converted to the ZC1 hardware patch bank format (SVZ).
 
@@ -80,6 +80,12 @@ JDTools merge %LIST% %2
 List all the contents of a SysEx dump (or any of the other supported input formats) by invoking `JDTools list <input.syx>`. This also lists objects that JDTools cannot convert (such as the JD-800 display area), but the actual contents are not shown for most of them. Useful for easily creating a patch listing of your banks.
 
 # Version History
+
+## v0.11 (2022-08-03)
+
+- Conversion to JD-08 format is more difficult than anticipated. As a result, the conversion process was changed so that the provided output file must be an **already existing** JD08Backup.svd file obtained from your JD-08. The file is then overwritten, but its contents are replaced with the new patch data.
+- Recognize JD-08 effect group A pan feature and warn about it during conversion
+- When converting a bank to BIN / SVZ / SVD, but the target format required smaller banks than the input file provided, only the first bank was written.
 
 ## v0.10 (2022-08-02)
 
@@ -119,5 +125,5 @@ JDTools is provided under the BSD 3-clause license. JDTools makes use of miniz, 
 
 # Building
 
-This project is written in C++ 20. For building, the cross-platform CMake project, or alternatively the Visual Studio 2019 solution for Windows can be used.
+This project is written in C++ 20. To build it, use the cross-platform CMake project, or alternatively the Visual Studio 2019 solution for Windows.
 

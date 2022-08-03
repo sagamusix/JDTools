@@ -84,6 +84,8 @@ namespace
 		std::array<char, 4> dd07 = { 'D', 'D', '0', '7' };
 		uint32le offset;
 		uint32le size;
+
+		static constexpr std::array<char, 4> PATCH_ENTRY{ 'P', 'A', 'T', 'a'};
 	};
 
 	struct SVDPatchHeader
@@ -217,14 +219,14 @@ std::vector<PatchVST> ReadSVD(std::istream &inFile)
 		return {};
 	}
 
-	uint32_t headerOffset = 16, patchOffset = 0, patchSize = 0;
+	uint32_t headerOffset = 14, patchOffset = 0, patchSize = 0;
 	while (headerOffset < fileHeader.headerSize)
 	{
 		SVDHeaderEntry entry;
 		if (!Read(inFile, entry))
 			return {};
 		headerOffset += sizeof(entry);
-		if (entry.type == std::array<char, 4>{ 'P', 'A', 'T', 'a' } && entry.dd07 == SVDHeaderEntry{}.dd07)
+		if (entry.type == SVDHeaderEntry::PATCH_ENTRY && entry.dd07 == SVDHeaderEntry{}.dd07)
 		{
 			patchOffset = entry.offset;
 			patchSize = entry.size;
@@ -320,32 +322,77 @@ void WriteSVZforHardware(std::ostream &outFile, const std::vector<PatchVST> &vst
 	WriteVector(outFile, patches);
 }
 
-void WriteSVD(std::ostream &outFile, const std::vector<PatchVST> &vstPatches)
+void WriteSVD(std::ostream &outFile, const std::vector<PatchVST> &vstPatches, const std::vector<char> &originalSVDfile)
 {
-	SVDHeader fileHeader{};
-	fileHeader.headerSize = sizeof(SVDHeader) + sizeof(SVDHeaderEntry) - 2;
-	
-	SVDHeaderEntry entry{};
-	entry.type = std::array<char, 4>{ 'P', 'A', 'T', 'a'};
-	entry.offset = sizeof(SVDHeader) + sizeof(SVDHeaderEntry);
-	entry.size = static_cast<uint32_t>(16 + 2048 * vstPatches.size());
-	
-	SVDPatchHeader patchHeader{};
-	patchHeader.numPatches = static_cast<uint32_t>(vstPatches.size());
+	SVDHeader fileHeader = *reinterpret_cast<const SVDHeader *>(originalSVDfile.data());
+	if (originalSVDfile.size() < 32 || fileHeader.magic != SVDHeader{}.magic || fileHeader.headerSize < 30)
+	{
+		std::cerr << "Output file must be a valid JD-08 backup SVD file!" << std::endl;
+		// File was already opened for writing... preserve original contents
+		WriteVector(outFile, originalSVDfile);
+		return;
+	}
+
+	std::vector<SVDHeaderEntry> entries;
+	bool hasPatchEntry = false;
+	for (uint32_t headerOffset = 14; headerOffset < fileHeader.headerSize; headerOffset += sizeof(SVDHeaderEntry))
+	{
+		entries.push_back(*reinterpret_cast<const SVDHeaderEntry *>(originalSVDfile.data() + headerOffset + 2));
+		if (entries.back().type == SVDHeaderEntry::PATCH_ENTRY)
+			hasPatchEntry = true;
+	}
+	if (!hasPatchEntry)
+	{
+		entries.push_back({SVDHeaderEntry::PATCH_ENTRY});
+		fileHeader.headerSize = fileHeader.headerSize + sizeof(SVDHeaderEntry);
+	}
 
 	Write(outFile, fileHeader);
-	Write(outFile, entry);
-	Write(outFile, patchHeader);
+	WriteVector(outFile, entries);  // Needs to be updated later
 
-	std::array<char, 2048> patchData{};
-	patchData[4] = 1;
-	patchData[5] = 1;
-	patchData[6] = 5;
-	patchData[8] = 15;
-	patchData[2044] = 8;
-	for (auto &patch : vstPatches)
+	uint32_t offset = static_cast<uint32_t>(outFile.tellp());
+	for (SVDHeaderEntry &entry : entries)
 	{
-		std::memcpy(patchData.data() + 16, &patch.name, 2016);
-		Write(outFile, patchData);
+		if (entry.type == SVDHeaderEntry::PATCH_ENTRY)
+		{
+			const uint32_t newSize = static_cast<uint32_t>(sizeof(SVDPatchHeader) + 2048 * vstPatches.size());
+
+			SVDPatchHeader patchHeader{};
+			patchHeader.numPatches = static_cast<uint32_t>(vstPatches.size());
+			Write(outFile, patchHeader);
+
+			std::array<char, 2048> patchData{};
+			patchData[4] = 1;
+			patchData[5] = 1;
+			patchData[6] = 5;
+			patchData[8] = 15;
+			patchData[2044] = 8;
+			for (const auto &patch : vstPatches)
+			{
+				std::memcpy(patchData.data() + 16, &patch.name, 2016);
+				Write(outFile, patchData);
+			}
+
+			// Keep extra patches intact
+			if(entry.size > newSize)
+				outFile.write(originalSVDfile.data() + entry.offset + newSize, entry.size - newSize);
+			else
+				entry.size = newSize;
+		}
+		else
+		{
+			// Just copy the original block
+			if(entry.offset < originalSVDfile.size() && entry.size < originalSVDfile.size() - entry.offset)
+				outFile.write(originalSVDfile.data() + entry.offset, entry.size);
+			else
+				entry.size = 0;
+		}
+		entry.offset = offset;
+		offset += entry.size;
 	}
+
+	outFile.seekp(sizeof(fileHeader));
+	WriteVector(outFile, entries);
+
+
 }
