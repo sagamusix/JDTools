@@ -7,6 +7,7 @@
 #include "PrecomputedTablesVST.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <string_view>
 
