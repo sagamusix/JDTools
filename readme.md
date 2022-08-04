@@ -81,6 +81,12 @@ List all the contents of a SysEx dump (or any of the other supported input forma
 
 # Version History
 
+## v0.12 (2022-08-04)
+
+- Converting a patch with tempo-synced delay taps or LFO rates to JD-800 SysEx now approximates the delay / rate. A tempo of 120 BPM is assumed.
+- LFO offset + and - were swapped when converting from JD-800 SysEx to BIN / SVD / SVZ or vice versa.
+- Support BIN files created with newer plugin versions.
+
 ## v0.11 (2022-08-03)
 
 - Conversion to JD-08 format is more difficult than anticipated. As a result, the conversion process was changed so that the provided output file must be an **already existing** JD08Backup.svd file obtained from your JD-08. The file is then overwritten, but its contents are replaced with the new patch data.
