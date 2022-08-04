@@ -28,6 +28,52 @@ static bool MapToArrayIndex(const T value, const T (&values)[N], uint8_t &target
 	return false;
 }
 
+static uint8_t ApproximateDelayWithTempoSync(uint8_t index)
+{
+	static constexpr uint8_t Divisor[] = { 64, 64, 32, 32, 16, 32, 16, 8, 16, 8, 4, 8, 4, 2, 4, 2, 1, 2, 1, 1, 1, 1 };
+	static constexpr uint8_t NoteType[] = { 3, 1, 3, 1, 3, 2, 1, 3, 2, 1, 3, 2, 1, 3, 2, 1, 3, 2, 1, 3, 2, 1 };
+	double tapLength = ((index == 19 || index == 21) ? 2.0 : 1.0) / SafeTable(Divisor, index);
+	if (const auto type = SafeTable(NoteType, index); type == 2)
+		tapLength *= 1.5;
+	else if (type == 3)
+		tapLength *= 2.0 / 3.0;
+
+	tapLength *= 2000.0;  // Assuming a tempo of 120 BPM, we now have the delay in milliseconds
+	int intOffset;
+	double offset, factor;
+	if (tapLength < 5.5)
+	{
+		intOffset = 0;
+		offset = 0.1;
+		factor = 0.1;
+	}
+	else if (tapLength < 11.0)
+	{
+		intOffset = 50;
+		offset = 5.5;
+		factor = 0.5;
+	}
+	else if (tapLength < 50.0)
+	{
+		intOffset = 60;
+		offset = 11.0;
+		factor = 1.0;
+	}
+	else if (tapLength < 220.0)
+	{
+		intOffset = 90;
+		offset = 5.0;
+		factor = 10.0;
+	}
+	else
+	{
+		intOffset = 106;
+		offset = 220.0;
+		factor = 20.0;
+	}
+	return static_cast<uint8_t>(std::clamp(intOffset + std::round((tapLength - offset) / factor), 0.0, 125.0));
+}
+
 template<typename T, size_t N>
 static void ConvertEQBand(const T(&freqTable)[N], uint8_t &freq, uint8_t &gain, uint16_t srcFreq, int16_t srcGain, const bool enabled, const std::string_view name)
 {
@@ -274,16 +320,16 @@ void ConvertPatchVSTTo800(const PatchVST &pVST, Patch800 &p800)
 	p800.effect.enhancerMix = pVST.effectsGroupA.enhancerMix.lsb;
 
 	if (pVST.effectsGroupB.delayCenterTempoSync)
-		std::cerr << "LOSSY CONVERSION! Delay Effect Center Tap uses tempo sync" << std::endl;
+		std::cerr << "LOSSY CONVERSION! Delay Effect Center Tap uses tempo sync, approximating delay @ 120 BPM" << std::endl;
 	if (pVST.effectsGroupB.delayLeftTempoSync)
-		std::cerr << "LOSSY CONVERSION! Delay Effect Left Tap uses tempo sync" << std::endl;
+		std::cerr << "LOSSY CONVERSION! Delay Effect Left Tap uses tempo sync, approximating delay @ 120 BPM" << std::endl;
 	if (pVST.effectsGroupB.delayRightTempoSync)
-		std::cerr << "LOSSY CONVERSION! Delay Effect Right Tap uses tempo sync" << std::endl;
-	p800.effect.delayCenterTap = pVST.effectsGroupB.delayCenterTap;
+		std::cerr << "LOSSY CONVERSION! Delay Effect Right Tap uses tempo sync, approximating delay @ 120 BPM" << std::endl;
+	p800.effect.delayCenterTap = pVST.effectsGroupB.delayCenterTempoSync ? ApproximateDelayWithTempoSync(pVST.effectsGroupB.delayCenterTapWithSync) : pVST.effectsGroupB.delayCenterTap;
 	p800.effect.delayCenterLevel = pVST.effectsGroupB.delayCenterLevel;
-	p800.effect.delayLeftTap = pVST.effectsGroupB.delayLeftTap;
+	p800.effect.delayLeftTap = pVST.effectsGroupB.delayLeftTempoSync ? ApproximateDelayWithTempoSync(pVST.effectsGroupB.delayLeftTapWithSync) : pVST.effectsGroupB.delayLeftTap;
 	p800.effect.delayLeftLevel = pVST.effectsGroupB.delayLeftLevel;
-	p800.effect.delayRightTap = pVST.effectsGroupB.delayRightTap;
+	p800.effect.delayRightTap = pVST.effectsGroupB.delayRightTempoSync ? ApproximateDelayWithTempoSync(pVST.effectsGroupB.delayRightTapWithSync) : pVST.effectsGroupB.delayRightTap;
 	p800.effect.delayRightLevel = pVST.effectsGroupB.delayRightLevel;
 	p800.effect.delayFeedback = pVST.effectsGroupB.delayFeedback;
 
