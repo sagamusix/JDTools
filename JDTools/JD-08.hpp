@@ -536,11 +536,6 @@ struct PatchVST
 			highGain;
 		uint8_t
 			eqEnabled;
-
-		static constexpr uint16_t LowFreq[] = { 200, 400 };
-		static constexpr uint16_t MidFreq[] = { 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000 };
-		static constexpr uint16_t HighFreq[] = { 4000, 8000 };
-		static constexpr uint8_t MidQ[] = { 5, 10, 20, 40, 90 };
 	};
 
 	ZenHeader zenHeader;  // Not present in hardware patches

@@ -417,10 +417,10 @@ void ConvertPatch800ToVST(const Patch800 &p800, PatchVST &pVST)
 	pVST.common.portamentoMode = p800.common.portamentoMode;
 	pVST.common.portamentoTime = p800.common.portamentoTime;
 
-	pVST.eq.midQ = SafeTable(PatchVST::EQ::MidQ, p800.eq.midQ);
-	pVST.eq.lowFreq = SafeTable(PatchVST::EQ::LowFreq, p800.eq.lowFreq);
-	pVST.eq.midFreq = SafeTable(PatchVST::EQ::MidFreq, p800.eq.midFreq);
-	pVST.eq.highFreq = SafeTable(PatchVST::EQ::HighFreq, p800.eq.highFreq);
+	pVST.eq.midQ = SafeTable(EQMidQ, p800.eq.midQ);
+	pVST.eq.lowFreq = SafeTable(EQLowFreq, p800.eq.lowFreq);
+	pVST.eq.midFreq = SafeTable(EQMidFreq, p800.eq.midFreq);
+	pVST.eq.highFreq = SafeTable(EQHighFreq, p800.eq.highFreq);
 	pVST.eq.lowGain = static_cast<uint16_t>(static_cast<int8_t>(p800.eq.lowGain - 15) * 10);
 	pVST.eq.midGain = static_cast<uint16_t>(static_cast<int8_t>(p800.eq.midGain - 15) * 10);
 	pVST.eq.highGain = static_cast<uint16_t>(static_cast<int8_t>(p800.eq.highGain - 15) * 10);

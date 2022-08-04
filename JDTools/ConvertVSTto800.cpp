@@ -4,6 +4,7 @@
 
 #include "JD-800.hpp"
 #include "JD-08.hpp"
+#include "PrecomputedTablesVST.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -28,38 +29,49 @@ static bool MapToArrayIndex(const T value, const T (&values)[N], uint8_t &target
 	return false;
 }
 
-static uint8_t ApproximateDelayWithTempoSync(uint8_t index)
+static double IndexToNoteDuration(const uint8_t index)
 {
-	static constexpr uint8_t Divisor[] = { 64, 64, 32, 32, 16, 32, 16, 8, 16, 8, 4, 8, 4, 2, 4, 2, 1, 2, 1, 1, 1, 1 };
-	static constexpr uint8_t NoteType[] = { 3, 1, 3, 1, 3, 2, 1, 3, 2, 1, 3, 2, 1, 3, 2, 1, 3, 2, 1, 3, 2, 1 };
-	double tapLength = ((index == 19 || index == 21) ? 2.0 : 1.0) / SafeTable(Divisor, index);
+	static constexpr uint8_t Divisor[] = { 64, 64, 32, 32, 16, 32, 16, 8, 16, 8, 4, 8, 4, 2, 4, 2, 1, 2, 1, 1, 1, 1, 1 };
+	static constexpr uint8_t NoteType[] = { 3, 1, 3, 1, 3, 2, 1, 3, 2, 1, 3, 2, 1, 3, 2, 1, 3, 2, 1, 3, 2, 1, 1 };
+	double length = 1.0;
+	if(index == 19 || index == 21)
+		length = 2.0;
+	else if(index == 22)
+		length = 4.0;
+	length /= SafeTable(Divisor, index);
 	if (const auto type = SafeTable(NoteType, index); type == 2)
-		tapLength *= 1.5;
+		length *= 1.5;
 	else if (type == 3)
-		tapLength *= 2.0 / 3.0;
+		length *= 2.0 / 3.0;
 
-	tapLength *= 2000.0;  // Assuming a tempo of 120 BPM, we now have the delay in milliseconds
+	length *= 2000.0;  // Assuming a tempo of 120 BPM, we now have the delay in milliseconds
+	return length;
+}
+
+static uint8_t ApproximateDelayWithTempoSync(const uint8_t index)
+{
+	const double tapDuration = IndexToNoteDuration(index);
 	int intOffset;
 	double offset, factor;
-	if (tapLength < 5.5)
+	if (tapDuration < 5.5)
 	{
 		intOffset = 0;
 		offset = 0.1;
 		factor = 0.1;
 	}
-	else if (tapLength < 11.0)
+	else if (tapDuration < 11.0)
 	{
 		intOffset = 50;
 		offset = 5.5;
 		factor = 0.5;
 	}
-	else if (tapLength < 50.0)
+	else if (tapDuration < 50.0)
 	{
 		intOffset = 60;
 		offset = 11.0;
 		factor = 1.0;
 	}
-	else if (tapLength < 220.0)
+	else if (tapDuration < 220.0)
 	{
 		intOffset = 90;
 		offset = 5.0;
@@ -71,7 +83,25 @@ static uint8_t ApproximateDelayWithTempoSync(uint8_t index)
 		offset = 220.0;
 		factor = 20.0;
 	}
-	return static_cast<uint8_t>(std::clamp(intOffset + std::round((tapLength - offset) / factor), 0.0, 125.0));
+	return static_cast<uint8_t>(std::clamp(intOffset + std::round((tapDuration - offset) / factor), 0.0, 125.0));
+}
+
+static uint8_t ApproximateLFORateWithTempoSync(const uint8_t index)
+{
+	const double noteDuration = IndexToNoteDuration(index);
+	double bestDiff = DBL_MAX;
+	uint8_t bestIndex = 0;
+	for (uint8_t i = 0; i < std::size(LFORates); i++)
+	{
+		const double rateDuration = 40000.0 * std::pow(2.0, LFORates[i] / -80.0 + 1.0);
+		const auto diff = std::abs(rateDuration - noteDuration);
+		if (diff < bestDiff)
+		{
+			bestDiff = diff;
+			bestIndex = i;
+		}
+	}
+	return bestIndex;
 }
 
 template<typename T, size_t N>
@@ -91,14 +121,14 @@ static void ConvertEQBand(const T(&freqTable)[N], uint8_t &freq, uint8_t &gain, 
 static void ConvertToneVSTTo800(const ToneVST &tVST, Tone800 &t800)
 {
 	if (tVST.wg.gain != 3 && tVST.common.layerEnabled)
-		std::cerr << "LOSSY CONVERSION! Tone uses gain != 3: " << int(tVST.wg.gain) << std::endl;
+		std::cerr << "LOSSY CONVERSION! Tone uses gain != 0 dB: " << ((static_cast<int>(tVST.wg.gain) - 3) * 6) << " dB" << std::endl;
 
 	t800.common.velocityCurve = tVST.common.velocityCurve;
 	t800.common.holdControl = tVST.common.holdControl;
 
 	if (tVST.lfo1.tempoSync && tVST.common.layerEnabled)
-		std::cerr << "LOSSY CONVERSION! Tone LFO1 uses tempo sync" << std::endl;
-	t800.lfo1.rate = tVST.lfo1.rate;
+		std::cerr << "LOSSY CONVERSION! Tone LFO1 uses tempo sync, approximating LFO rate @ 120 BPM" << std::endl;
+	t800.lfo1.rate = tVST.lfo1.tempoSync ? ApproximateLFORateWithTempoSync(tVST.lfo1.rateWithTempoSync) : tVST.lfo1.rate;
 	t800.lfo1.delay = tVST.lfo1.delay;
 	t800.lfo1.fade = tVST.lfo1.fade + 50;
 	t800.lfo1.waveform = tVST.lfo1.waveform;
@@ -106,8 +136,8 @@ static void ConvertToneVSTTo800(const ToneVST &tVST, Tone800 &t800)
 	t800.lfo1.keyTrigger = tVST.lfo1.keyTrigger;
 
 	if (tVST.lfo2.tempoSync && tVST.common.layerEnabled)
-		std::cerr << "LOSSY CONVERSION! Tone LFO2 uses tempo sync" << std::endl;
-	t800.lfo2.rate = tVST.lfo2.rate;
+		std::cerr << "LOSSY CONVERSION! Tone LFO2 uses tempo sync, approximating LFO rate @ 120 BPM" << std::endl;
+	t800.lfo2.rate = tVST.lfo2.tempoSync ? ApproximateLFORateWithTempoSync(tVST.lfo2.rateWithTempoSync) : tVST.lfo2.rate;
 	t800.lfo2.delay = tVST.lfo2.delay;
 	t800.lfo2.fade = tVST.lfo2.fade + 50;
 	t800.lfo2.waveform = tVST.lfo2.waveform;
@@ -252,10 +282,10 @@ void ConvertPatchVSTTo800(const PatchVST &pVST, Patch800 &p800)
 			p800.common.activeTone |= (1 << i);
 	}
 
-	ConvertEQBand(PatchVST::EQ::LowFreq, p800.eq.lowFreq, p800.eq.lowGain, pVST.eq.lowFreq, pVST.eq.lowGain, pVST.eq.eqEnabled, "low");
-	ConvertEQBand(PatchVST::EQ::MidFreq, p800.eq.midFreq, p800.eq.midGain, pVST.eq.midFreq, pVST.eq.midGain, pVST.eq.eqEnabled, "mid");
-	ConvertEQBand(PatchVST::EQ::HighFreq, p800.eq.highFreq, p800.eq.highGain, pVST.eq.highFreq, pVST.eq.highGain, pVST.eq.eqEnabled, "high");
-	if (!MapToArrayIndex(pVST.eq.midQ, PatchVST::EQ::MidQ, p800.eq.midQ) && pVST.eq.midGain != 0 && pVST.eq.eqEnabled)
+	ConvertEQBand(EQLowFreq, p800.eq.lowFreq, p800.eq.lowGain, pVST.eq.lowFreq, pVST.eq.lowGain, pVST.eq.eqEnabled, "low");
+	ConvertEQBand(EQMidFreq, p800.eq.midFreq, p800.eq.midGain, pVST.eq.midFreq, pVST.eq.midGain, pVST.eq.eqEnabled, "mid");
+	ConvertEQBand(EQHighFreq, p800.eq.highFreq, p800.eq.highGain, pVST.eq.highFreq, pVST.eq.highGain, pVST.eq.eqEnabled, "high");
+	if (!MapToArrayIndex(pVST.eq.midQ, EQMidQ, p800.eq.midQ) && pVST.eq.midGain != 0 && pVST.eq.eqEnabled)
 		std::cerr << "LOSSY CONVERSION! Unsupported EQ mid Q value: " << pVST.eq.midQ << std::endl;
 
 	p800.midiTx.keyMode = 0;
