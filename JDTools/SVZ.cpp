@@ -13,30 +13,37 @@
 
 namespace
 {
+	constexpr bool IsDigit(const char digit)
+	{
+		return digit >= '0' && digit <= '9';
+	}
+	
 	struct SVZHeaderPlugin
 	{
 		std::array<char, 4> SVZa = { 'S', 'V', 'Z', 'a' };
 		uint16le unknown1 = 1;
-		std::array<char, 10> RC001_1 = { 'R', 'C', '0', '0', '1', 1, 0, 0, 0, 0};
+		std::array<char, 8> RC1 = { 'R', 'C', '0', '0', '1', 1, 0, 0 };
+		uint16le unknown2 = 0;
 		std::array<char, 4> EXTa = { 'E', 'X', 'T', 'a' };
 		std::array<char, 4> ZCOR = { 'Z', 'C', 'O', 'R' };
-		uint32le unknown2 = 0x20;
+		uint32le unknown3 = 0x20;
 		uint32le compressedSize1;
-		std::array<uint32le, 6> unknown3 = { 1, 0, 32, 0, 1, 32};
+		std::array<uint32le, 6> unknown4 = { 1, 0, 32, 0, 1, 32};
 		uint32le compressedSize2;
 		uint32le compressedCRC32;
-		std::array<char, 8> RC001_2 = { 'R', 'C', '0', '0', '1', 1, 0, 0 };
+		std::array<char, 8> RC2 = { 'R', 'C', '0', '0', '1', 1, 0, 0 };
 		uint32le uncompressedSize;
-		std::array<uint32le, 5> unknown4 = { 0, 0, 0, 0, 0 };
+		std::array<uint32le, 5> unknown5 = { 0, 0, 0, 0, 0 };
 
 		bool IsValid() const noexcept
 		{
 			const SVZHeaderPlugin expected{};
 			return SVZa == expected.SVZa && unknown1 == expected.unknown1
-				&& RC001_1 == expected.RC001_1 && EXTa == expected.EXTa
-				&& ZCOR == expected.ZCOR && unknown2 == expected.unknown2
-				&& unknown3 == expected.unknown3 && RC001_2 == expected.RC001_2
-				&& unknown4 == expected.unknown4;
+				&& RC1[0] == 'R' && RC1[1] == 'C' && IsDigit(RC1[2]) && IsDigit(RC1[3]) && IsDigit(RC1[4]) && RC1[5] == 1 && RC1[6] == 0 && RC1[7] == 0
+				&& RC1 == RC2 && unknown2 == expected.unknown2
+				&& EXTa == expected.EXTa && ZCOR == expected.ZCOR
+				&& unknown3 == expected.unknown3 && unknown4 == expected.unknown4
+				&& unknown5 == expected.unknown5;
 		}
 	};
 
@@ -44,14 +51,14 @@ namespace
 	{
 		std::array<char, 4> SVZa = { 'S', 'V', 'Z', 'a' };
 		uint16le unknown1 = 0x0202;
-		std::array<char, 10> RC001_1 = { 'R', 'C', '0', '0', '1', 1, 0, 0, 0, 0 };
+		std::array<char, 10> RC = { 'R', 'C', '0', '0', '1', 1, 0, 0, 0, 0 };
 		std::array<char, 4> DIFa = { 'D', 'I', 'F', 'a' };
 		std::array<char, 4> ZCOR_1 = { 'Z', 'C', 'O', 'R' };
 		uint32le unknown2 = 0x30;
 		uint32le unknown3 = 0x34;
 		std::array<char, 4> MDLa = { 'M', 'D', 'L', 'a' };
 		std::array<char, 4> ZCOR_2 = { 'Z', 'C', 'O', 'R' };
-		uint32le unknown4 = 0x64;
+		uint32le bankOffset = 0x64;
 		uint32le bankSize = 0;  // Starting from number of patches
 		std::array<uint8_t, 52> unknown5 = { 0x01, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x42, 0x09, 0x5C, 0xA1, 0x03, 0x00, 0x86, 0xC8, 0xE5, 0x4C, 0xA5, 0x48, 0x08, 0x0C, 0x00, 0x48, 0x00, 0x48, 0x00, 0x48, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 		uint32le numPatches = 0;
@@ -63,10 +70,11 @@ namespace
 		{
 			const SVZHeaderHardware expected{};
 			return SVZa == expected.SVZa && unknown1 == 0x0202
-				&& RC001_1 == expected.RC001_1 && DIFa == expected.DIFa
+				&& RC[0] == 'R' && RC[1] == 'C' && IsDigit(RC[2]) && IsDigit(RC[3]) && IsDigit(RC[4]) && RC[5] == 1 && RC[6] == 0 && RC[7] == 0 && RC[8] == 0 && RC[9] == 0
+				&& RC == expected.RC && DIFa == expected.DIFa
 				&& ZCOR_1 == expected.ZCOR_1 && unknown2 == 0x30
 				&& unknown3 == 0x34 && MDLa == expected.MDLa
-				&& ZCOR_2 == expected.ZCOR_2 && unknown4 == expected.unknown4
+				&& ZCOR_2 == expected.ZCOR_2 && bankOffset == expected.bankOffset
 				&& unknown5 == expected.unknown5 && unknown6 == expected.unknown6
 				&& bankSizeTruncated == (bankSize & 0x1FF) && unknown7 == expected.unknown7;
 		}
