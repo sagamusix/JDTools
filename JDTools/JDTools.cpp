@@ -610,8 +610,8 @@ int main(const int argc, char *argv[])
 			{
 				std::cout << "Display data:" << std::endl;
 				const char *str = reinterpret_cast<const char *>(memory.data() + BASE_ADDR_800_DISPLAY);
-				std::cout << std::string_view{ str, str + 22 } << std::endl;
-				std::cout << std::string_view{ str + 22, str + 44 } << std::endl;
+				std::cout << std::string_view{ str, 22 } << std::endl;
+				std::cout << std::string_view{ str + 22, 22 } << std::endl;
 			}
 		}
 		else if (sourceDeviceType == DeviceType::JD990)
