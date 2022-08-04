@@ -102,7 +102,7 @@ static void ConvertToneVSTTo800(const ToneVST &tVST, Tone800 &t800)
 	t800.lfo1.delay = tVST.lfo1.delay;
 	t800.lfo1.fade = tVST.lfo1.fade + 50;
 	t800.lfo1.waveform = tVST.lfo1.waveform;
-	t800.lfo1.offset = tVST.lfo1.offset;
+	t800.lfo1.offset = (2 - tVST.lfo1.offset) % 3;
 	t800.lfo1.keyTrigger = tVST.lfo1.keyTrigger;
 
 	if (tVST.lfo2.tempoSync && tVST.common.layerEnabled)
@@ -111,7 +111,7 @@ static void ConvertToneVSTTo800(const ToneVST &tVST, Tone800 &t800)
 	t800.lfo2.delay = tVST.lfo2.delay;
 	t800.lfo2.fade = tVST.lfo2.fade + 50;
 	t800.lfo2.waveform = tVST.lfo2.waveform;
-	t800.lfo2.offset = tVST.lfo2.offset;
+	t800.lfo2.offset = (2 - tVST.lfo2.offset) % 3;
 	t800.lfo2.keyTrigger = tVST.lfo2.keyTrigger;
 
 	t800.wg.waveSource = 0;

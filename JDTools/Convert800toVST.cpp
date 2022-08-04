@@ -32,7 +32,7 @@ static void ConvertTone800ToVST(const Tone800 &t800, const bool enabled, const b
 	tVST.lfo1.rateWithTempoSync = 6;  // Extended feature
 	tVST.lfo1.delay = t800.lfo1.delay;
 	tVST.lfo1.fade = t800.lfo1.fade - 50;
-	tVST.lfo1.offset = t800.lfo1.offset;
+	tVST.lfo1.offset = 2 - t800.lfo1.offset;
 	tVST.lfo1.keyTrigger = t800.lfo1.keyTrigger;
 
 	tVST.lfo2.waveform = t800.lfo2.waveform;
@@ -41,7 +41,7 @@ static void ConvertTone800ToVST(const Tone800 &t800, const bool enabled, const b
 	tVST.lfo2.rateWithTempoSync = 6;  // Extended feature
 	tVST.lfo2.delay = t800.lfo2.delay;
 	tVST.lfo2.fade = t800.lfo2.fade - 50;
-	tVST.lfo2.offset = t800.lfo2.offset;
+	tVST.lfo2.offset = 2 - t800.lfo2.offset;
 	tVST.lfo2.keyTrigger = t800.lfo2.keyTrigger;
 
 	if (t800.wg.waveSource != 0 && tVST.common.layerEnabled)
