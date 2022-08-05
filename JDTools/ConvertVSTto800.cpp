@@ -7,7 +7,6 @@
 #include "PrecomputedTablesVST.hpp"
 
 #include <algorithm>
-#include <climits>
 #include <cmath>
 #include <iostream>
 #include <string_view>
@@ -91,7 +90,7 @@ static uint8_t ApproximateDelayWithTempoSync(const uint8_t index)
 static uint8_t ApproximateLFORateWithTempoSync(const uint8_t index)
 {
 	const double noteDuration = IndexToNoteDuration(index);
-	double bestDiff = DBL_MAX;
+	double bestDiff = 1'000'000.0;
 	uint8_t bestIndex = 0;
 	for (uint8_t i = 0; i < std::size(LFORates); i++)
 	{
