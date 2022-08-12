@@ -460,3 +460,66 @@ void ConvertPatch800ToVST(const Patch800 &p800, PatchVST &pVST)
 		0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x40, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0xFF, 0x3C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 	};
 }
+
+std::vector<PatchVST> ConvertSetup800ToVST(const SpecialSetup800 &s800)
+{
+	std::vector<PatchVST> patches(64);
+
+	Patch800 p800{};
+	p800.common.patchLevel = 100;
+	p800.common.keyRangeLowA = 0;
+	p800.common.keyRangeHighA = 127;
+	p800.common.keyRangeLowB = 0;
+	p800.common.keyRangeHighB = 127;
+	p800.common.keyRangeLowC = 0;
+	p800.common.keyRangeHighC = 127;
+	p800.common.keyRangeLowD = 0;
+	p800.common.keyRangeHighD = 127;
+	p800.common.benderRangeDown = s800.common.benderRangeDown;
+	p800.common.benderRangeUp = s800.common.benderRangeUp;
+	p800.common.aTouchBend = s800.common.aTouchBendSens;
+	p800.common.soloSW = 0;
+	p800.common.soloLegato = 0;
+	p800.common.portamentoSW = 0;
+	p800.common.portamentoMode = 0;
+	p800.common.portamentoTime = 0;
+	p800.common.layerTone = 1;
+	p800.common.activeTone = 1;
+
+	p800.eq.lowFreq = s800.eq.lowFreq;
+	p800.eq.lowGain = s800.eq.lowGain;
+	p800.eq.midFreq = s800.eq.midFreq;
+	p800.eq.midQ = s800.eq.midQ;
+	p800.eq.midGain = s800.eq.midGain;
+	p800.eq.highFreq = s800.eq.highFreq;
+	p800.eq.highGain = s800.eq.highGain;
+
+	p800.midiTx.keyMode = 0;
+	p800.midiTx.splitPoint = 36;
+	p800.midiTx.lowerChannel = 1;
+	p800.midiTx.upperChannel = 0;
+	p800.midiTx.lowerProgramChange = 0;
+	p800.midiTx.upperProgramChange = 0;
+	p800.midiTx.holdMode = 2;
+	p800.midiTx.dummy = 0;
+
+	static constexpr std::array<const char *, 12> KeyNames = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
+
+	for (uint8_t key = 0; key < 61; key++)
+	{
+		std::string name = "Drum Key " + (KeyNames[key % 12] + std::string(1, '2' + key / 12));
+		name.resize(p800.common.name.size(), ' ');
+		std::copy(name.begin(), name.end(), p800.common.name.begin());
+
+		p800.toneA = s800.keys[key].tone;
+
+		ConvertPatch800ToVST(p800, patches[key]);
+	}
+	p800.common.name.fill(' ');
+	p800.toneA = {};
+	for (uint8_t key = 61; key < 64; key++)
+	{
+		ConvertPatch800ToVST(p800, patches[key]);
+	}
+	return patches;
+}

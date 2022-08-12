@@ -493,8 +493,49 @@ int main(const int argc, char *argv[])
 			else if (targetType == InputFile::Type::SVD)
 				WriteSVD(outFile, vstPatches, originalSVDfile);
 
-			if(bank > 0 || (targetType != InputFile::Type::SYX && targetType != InputFile::Type::MID))
+			if(bank > 0)
 				continue;
+
+			if (targetType != InputFile::Type::SYX && targetType != InputFile::Type::MID)
+			{
+				// Convert rhythm setup / special setup
+				const uint32_t address800 = memory[BASE_ADDR_800_SETUP_INTERNAL] != UNDEFINED_MEMORY ? BASE_ADDR_800_SETUP_INTERNAL : BASE_ADDR_800_SETUP_TEMPORARY;
+				const uint32_t address990 = memory[BASE_ADDR_990_SETUP_INTERNAL] != UNDEFINED_MEMORY ? BASE_ADDR_990_SETUP_INTERNAL : BASE_ADDR_990_SETUP_TEMPORARY;
+				std::vector<PatchVST> setupPatches;
+				if (sourceDeviceType == DeviceType::JD800 && memory[address800] != UNDEFINED_MEMORY)
+				{
+					const SpecialSetup800 &s800 = *reinterpret_cast<const SpecialSetup800 *>(memory.data() + address800);
+					std::cout << "Converting special setup" << std::endl;
+					setupPatches = ConvertSetup800ToVST(s800);
+				}
+				else if (sourceDeviceType == DeviceType::JD990 && memory[address990] != UNDEFINED_MEMORY)
+				{
+					const SpecialSetup990 &s990 = *reinterpret_cast<const SpecialSetup990 *>(memory.data() + address990);
+					SpecialSetup800 s800;
+					std::cout << "Converting special setup: " << toString(s990.common.name) << std::endl;
+					ConvertSetup990To800(s990, s800);
+					setupPatches = ConvertSetup800ToVST(s800);
+				}
+
+				if (!setupPatches.empty())
+				{
+					if (outFilename.size() > 4 && outFilename[outFilename.size() - 4] == '.')
+						outFilename = outFilename.substr(0, outFilename.size() - 3) + "setup" + outFilename.substr(outFilename.size() - 4);
+					else
+						outFilename += ".setup." + std::string{ targetExt };
+
+					std::ofstream outFileSetup{ outFilename, std::ios::trunc | std::ios::binary };
+
+					if (targetType == InputFile::Type::SVZplugin)
+						WriteSVZforPlugin(outFileSetup, setupPatches);
+					else if (targetType == InputFile::Type::SVZhardware)
+						WriteSVZforHardware(outFileSetup, setupPatches);
+					else if (targetType == InputFile::Type::SVD)
+						WriteSVD(outFileSetup, setupPatches, originalSVDfile);
+				}
+
+				continue;
+			}
 
 			// Convert rhythm setup / special setup
 			const uint32_t address800 = BASE_ADDR_800_SETUP_INTERNAL;

@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <vector>
+
 struct Patch800;
 struct Patch990;
 struct PatchVST;
@@ -19,3 +21,4 @@ struct SpecialSetup990;
 
 void ConvertSetup800To990(const SpecialSetup800 &s800, SpecialSetup990 &s990);
 void ConvertSetup990To800(const SpecialSetup990 &s990, SpecialSetup800 &s800);
+std::vector<PatchVST> ConvertSetup800ToVST(const SpecialSetup800 &s800);
