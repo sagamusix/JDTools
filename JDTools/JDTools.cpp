@@ -499,8 +499,8 @@ int main(const int argc, char *argv[])
 			if (targetType != InputFile::Type::SYX && targetType != InputFile::Type::MID)
 			{
 				// Convert rhythm setup / special setup
-				const uint32_t address800 = memory[BASE_ADDR_800_SETUP_INTERNAL] != UNDEFINED_MEMORY ? BASE_ADDR_800_SETUP_INTERNAL : BASE_ADDR_800_SETUP_TEMPORARY;
-				const uint32_t address990 = memory[BASE_ADDR_990_SETUP_INTERNAL] != UNDEFINED_MEMORY ? BASE_ADDR_990_SETUP_INTERNAL : BASE_ADDR_990_SETUP_TEMPORARY;
+				const uint32_t address800 = (memory[BASE_ADDR_800_SETUP_INTERNAL] != UNDEFINED_MEMORY) ? BASE_ADDR_800_SETUP_INTERNAL : BASE_ADDR_800_SETUP_TEMPORARY;
+				const uint32_t address990 = (memory[BASE_ADDR_990_SETUP_INTERNAL] != UNDEFINED_MEMORY) ? BASE_ADDR_990_SETUP_INTERNAL : BASE_ADDR_990_SETUP_TEMPORARY;
 				std::vector<PatchVST> setupPatches;
 				if (sourceDeviceType == DeviceType::JD800 && memory[address800] != UNDEFINED_MEMORY)
 				{
