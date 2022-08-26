@@ -53,7 +53,7 @@ By invoking `JDTools convert bin <input.file> <output.bin>`, the input file is c
 
 By invoking `JDTools convert svd <input.file> <JD08Backup.svd>`, the input file is converted to the JD-08 patch bank format (SVD). The provided output file must be an **already existing** JD08Backup.svd file obtained from your JD-08. The file is then overwritten, but its contents are replaced with the new patch data. The output file should be named JD08Backup.svd so that the JD-08 can find it.
 
-By invoking `JDTools convert svz <input.file> <output.svz>`, the input file is converted to the ZC1 hardware patch bank format (SVZ).
+By invoking `JDTools convert svz <input.file> <output.svz>`, the input file is converted to the ZC1 hardware patch bank format (SVZ), for use with the Jupiter-X with the JD-800 Model Expansion and potentially other hardware synthesizers based on ZenCore.
 
 To convert e.g. a JD-800 VST patch bank to a JD-990 SysEx dump, an intermediate conversion to a JD-800 SysEx dump is required.
 
