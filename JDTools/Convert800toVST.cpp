@@ -332,13 +332,13 @@ void ConvertPatch800ToVST(const Patch800 &p800, PatchVST &pVST)
 	pVST.effectsGroupA.distortionType = p800.effect.distortionType;
 	pVST.effectsGroupA.distortionDrive = p800.effect.distortionDrive;
 	pVST.effectsGroupA.distortionLevel = p800.effect.distortionLevel;
-	pVST.effectsGroupA.phaserEnabled = BlockEnabledA[PhaserPos[p800.effect.groupAsequence % 24u]];
+	pVST.effectsGroupA.phaserEnabled = BlockEnabledA[SafeTable(PhaserPos, p800.effect.groupAsequence)];
 	pVST.effectsGroupA.phaserManual = p800.effect.phaserManual;
 	pVST.effectsGroupA.phaserRate = p800.effect.phaserRate;
 	pVST.effectsGroupA.phaserDepth = p800.effect.phaserDepth;
 	pVST.effectsGroupA.phaserResonance = p800.effect.phaserResonance;
 	pVST.effectsGroupA.phaserMix = p800.effect.phaserMix;
-	pVST.effectsGroupA.spectrumEnabled = BlockEnabledA[SpectrumPos[p800.effect.groupAsequence % 24u]];
+	pVST.effectsGroupA.spectrumEnabled = BlockEnabledA[SafeTable(SpectrumPos, p800.effect.groupAsequence)];
 	pVST.effectsGroupA.spectrumBand1 = p800.effect.spectrumBand1;
 	pVST.effectsGroupA.spectrumBand2 = p800.effect.spectrumBand2;
 	pVST.effectsGroupA.spectrumBand3 = p800.effect.spectrumBand3;
@@ -346,7 +346,7 @@ void ConvertPatch800ToVST(const Patch800 &p800, PatchVST &pVST)
 	pVST.effectsGroupA.spectrumBand5 = p800.effect.spectrumBand5;
 	pVST.effectsGroupA.spectrumBand6 = p800.effect.spectrumBand6;
 	pVST.effectsGroupA.spectrumBandwidth = p800.effect.spectrumBandwidth;
-	pVST.effectsGroupA.enhancerEnabled = BlockEnabledA[EnhancerPos[p800.effect.groupAsequence % 24u]];
+	pVST.effectsGroupA.enhancerEnabled = BlockEnabledA[SafeTable(EnhancerPos, p800.effect.groupAsequence)];
 	pVST.effectsGroupA.enhancerSens = p800.effect.enhancerSens;
 	pVST.effectsGroupA.enhancerMix = p800.effect.enhancerMix;
 	pVST.effectsGroupA.panningGroupA = 64;
@@ -363,7 +363,7 @@ void ConvertPatch800ToVST(const Patch800 &p800, PatchVST &pVST)
 	const uint8_t BlockEnabledB[] = { p800.effect.groupBblockSwitch1, p800.effect.groupBblockSwitch2, p800.effect.groupBblockSwitch3 };
 
 	pVST.effectsGroupB.groupBsequence = p800.effect.groupBsequence;
-	pVST.effectsGroupB.delayEnabled = BlockEnabledB[DelayPos[p800.effect.groupBsequence % 6u]];
+	pVST.effectsGroupB.delayEnabled = BlockEnabledB[SafeTable(DelayPos, p800.effect.groupBsequence)];
 	pVST.effectsGroupB.delayCenterTempoSync = 0;  // Extended feature
 	pVST.effectsGroupB.delayCenterTap = p800.effect.delayCenterTap;
 	pVST.effectsGroupB.delayCenterTapWithSync = 0;  // Extended feature
@@ -378,14 +378,14 @@ void ConvertPatch800ToVST(const Patch800 &p800, PatchVST &pVST)
 	pVST.effectsGroupB.delayRightLevel = p800.effect.delayRightLevel;
 	pVST.effectsGroupB.delayFeedback = p800.effect.delayFeedback;
 
-	pVST.effectsGroupB.chorusEnabled = BlockEnabledB[ChorusPos[p800.effect.groupBsequence % 6u]];
+	pVST.effectsGroupB.chorusEnabled = BlockEnabledB[SafeTable(ChorusPos, p800.effect.groupBsequence)];
 	pVST.effectsGroupB.chorusRate = p800.effect.chorusRate;
 	pVST.effectsGroupB.chorusDepth = p800.effect.chorusDepth;
 	pVST.effectsGroupB.chorusDelayTime = p800.effect.chorusDelayTime;
 	pVST.effectsGroupB.chorusFeedback = p800.effect.chorusFeedback;
 	pVST.effectsGroupB.chorusLevel = p800.effect.chorusLevel;
 
-	pVST.effectsGroupB.reverbEnabled = BlockEnabledB[ReverbPos[p800.effect.groupBsequence % 6u]];
+	pVST.effectsGroupB.reverbEnabled = BlockEnabledB[SafeTable(ReverbPos, p800.effect.groupBsequence)];
 	pVST.effectsGroupB.reverbType = p800.effect.reverbType;
 	pVST.effectsGroupB.reverbPreDelay = p800.effect.reverbPreDelay;
 	pVST.effectsGroupB.reverbEarlyRefLevel = p800.effect.reverbEarlyRefLevel;
@@ -507,7 +507,7 @@ std::vector<PatchVST> ConvertSetup800ToVST(const SpecialSetup800 &s800)
 
 	for (uint8_t key = 0; key < 61; key++)
 	{
-		std::string name = "Drum Key " + (KeyNames[key % 12] + std::string(1, '2' + key / 12));
+		std::string name = "Drum Key " + (KeyNames[key % 12u] + std::string(1, '2' + key / 12));
 		name.resize(p800.common.name.size(), ' ');
 		std::copy(name.begin(), name.end(), p800.common.name.begin());
 
