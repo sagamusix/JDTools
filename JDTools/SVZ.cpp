@@ -366,7 +366,7 @@ void WriteSVD(std::ostream &outFile, const std::vector<PatchVST> &vstPatches, co
 	{
 		if (entry.type == SVDHeaderEntry::PATCH_ENTRY)
 		{
-			const uint32_t newSize = static_cast<uint32_t>(sizeof(SVDPatchHeader) + 2048 * vstPatches.size());
+			entry.size = static_cast<uint32_t>(sizeof(SVDPatchHeader) + 2048 * vstPatches.size());
 
 			SVDPatchHeader patchHeader{};
 			patchHeader.numPatches = static_cast<uint32_t>(vstPatches.size());
@@ -383,12 +383,6 @@ void WriteSVD(std::ostream &outFile, const std::vector<PatchVST> &vstPatches, co
 				std::memcpy(patchData.data() + 16, &patch.name, 2016);
 				Write(outFile, patchData);
 			}
-
-			// Keep extra patches intact
-			if(entry.size > newSize)
-				outFile.write(originalSVDfile.data() + entry.offset + newSize, entry.size - newSize);
-			else
-				entry.size = newSize;
 		}
 		else
 		{

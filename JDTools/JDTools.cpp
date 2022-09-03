@@ -70,11 +70,13 @@ JDTools convert bin <input> <output>
   Converts from JD-800 SysEx dump (SYX / MID), JD-990 SysEx dump (SYX / MID),
   JD-08 SVD or ZC1 SVZ file to JD-800 VST BIN file.
 
-JDTools convert svd <input> <JD08Backup.svd>
+JDTools convert svd <input> <JD08Backup.svd> <position>
   Converts from JD-800 SysEx dump (SYX / MID), JD-990 SysEx dump (SYX / MID),
   JD-800 VST BIN or ZC1 SVZ file to JD-08 SVD file.
   The output file should be named JD08Backup.svd so that the JD-08 can find it,
   and must be a valid, existing JD-08 backup file to overwrite.
+  The last parameter is optional and specifies the starting patch position to
+  overwrite. This can just be a bank (A/B/C/D) or a patch number (e.g. B42).
 
 JDTools convert svz <input> <output>
   Converts from JD-800 SysEx dump (SYX / MID), JD-990 SysEx dump (SYX / MID),
@@ -132,6 +134,16 @@ static void WriteSysEx(std::ofstream &f, uint32_t outAddress, const bool isJD990
 	WriteSysEx(f, outAddress, isJD990, reinterpret_cast<const uint8_t *>(&object), sizeof(object));
 }
 
+static std::vector<PatchVST> MergePatchesIntoSVD(std::vector<PatchVST> patches, const std::vector<PatchVST> &sourceFile, const size_t offset)
+{
+	patches.insert(patches.begin(), sourceFile.begin(), sourceFile.begin() + std::min(sourceFile.size(), offset));
+	if (patches.size() < sourceFile.size())
+		patches.insert(patches.end(), sourceFile.begin() + patches.size(), sourceFile.end());
+	else if (patches.size() > 256)
+		patches.resize(256);
+	return patches;
+}
+
 
 int main(const int argc, char *argv[])
 {
@@ -154,7 +166,7 @@ int main(const int argc, char *argv[])
 		PrintUsage();
 		return 1;
 	}
-	if ((verb == "convert" && argc != 5) || (verb == "list" && argc != 3) || (verb == "merge" && argc < 4))
+	if ((verb == "list" && argc != 3) || (verb == "merge" && argc < 4))
 	{
 		PrintUsage();
 		return 1;
@@ -168,19 +180,19 @@ int main(const int argc, char *argv[])
 	if (verb == "convert")
 	{
 		const std::string_view targetStr = argv[2];
-		if (targetStr == "syx" || targetStr == "SYX")
+		if (targetStr == "syx" || targetStr == "SYX" && argc == 5)
 		{
 			targetType = InputFile::Type::SYX;
 		}
-		else if(targetStr == "bin" || targetStr == "BIN")
+		else if(targetStr == "bin" || targetStr == "BIN" && argc == 5)
 		{
 			targetType = InputFile::Type::SVZplugin;
 		}
-		else if (targetStr == "svz" || targetStr == "SVZ")
+		else if (targetStr == "svz" || targetStr == "SVZ" && argc == 5)
 		{
 			targetType = InputFile::Type::SVZhardware;
 		}
-		else if (targetStr == "svd" || targetStr == "SVD")
+		else if (targetStr == "svd" || targetStr == "SVD" && (argc == 5 || argc == 6))
 		{
 			targetType = InputFile::Type::SVD;
 		}
@@ -349,6 +361,8 @@ int main(const int argc, char *argv[])
 		const std::string_view outFilenameBase = argv[4];
 		std::string_view sourceName, targetName, targetExt;
 		std::vector<char> originalSVDfile;
+		std::vector<PatchVST> svdOutputPatches;
+		uint32_t patchOffsetSVD = 0;
 		if (sourceDeviceType == DeviceType::JD800)
 			sourceName = "JD-800";
 		else if (sourceDeviceType == DeviceType::JD990)
@@ -386,7 +400,8 @@ int main(const int argc, char *argv[])
 				return 2;
 			}
 
-			if (ReadSVD(inFile).empty())
+			svdOutputPatches = ReadSVD(inFile);
+			if (svdOutputPatches.empty())
 			{
 				std::cout << outFilenameBase << " does not appear to be a valid SVD file! An original JD-08 backup file is required to write the patch data into." << std::endl;
 				return 2;
@@ -396,6 +411,25 @@ int main(const int argc, char *argv[])
 			const auto size = static_cast<size_t>(inFile.tellg());
 			inFile.seekg(0);
 			ReadVector(inFile, originalSVDfile, size);
+
+			if (argc == 6)
+			{
+				// Determine write offset
+				const std::string_view svdOffset = argv[5];
+				if (svdOffset.size() == 1 && svdOffset[0] >= 'A' && svdOffset[0] <= 'D')
+					patchOffsetSVD = (svdOffset[0] - 'A') * 64;
+				else if (svdOffset.size() == 1 && svdOffset[0] >= 'a' && svdOffset[0] <= 'd')
+					patchOffsetSVD = (svdOffset[0] - 'a') * 64;
+				else if (svdOffset.size() == 3 && svdOffset[0] >= 'A' && svdOffset[0] <= 'D' && svdOffset[1] >= '1' && svdOffset[1] <= '8' && svdOffset[2] >= '1' && svdOffset[2] <= '8')
+					patchOffsetSVD = (svdOffset[0] - 'A') * 64 + (svdOffset[1] - '1') * 8 + (svdOffset[2] - '1');
+				else if (svdOffset.size() == 3 && svdOffset[0] >= 'a' && svdOffset[0] <= 'd' && svdOffset[1] >= '1' && svdOffset[1] <= '8' && svdOffset[2] >= '1' && svdOffset[2] <= '8')
+					patchOffsetSVD = (svdOffset[0] - 'a') * 64 + (svdOffset[1] - '1') * 8 + (svdOffset[2] - '1');
+				else
+				{
+					std::cout << "Position parameter needs to be a bank (A/B/C/D) or patch number (e.g. B42)!" << std::endl;
+					return 2;
+				}
+			}
 		}
 
 		std::cout << "Converting " << sourceName << " patch format to " << targetName << "..." << std::endl;
@@ -476,7 +510,8 @@ int main(const int argc, char *argv[])
 				else if (sourceDeviceType == DeviceType::JD800VST)
 				{
 					const PatchVST &pVST = vstPatches[sourcePatch];
-					std::cout << "Converting I" << (destPatch / 8 + 1) << (destPatch % 8 + 1) << ": " << toString(pVST.name) << std::endl;
+					const std::string bankName(1, (numBanks <= 1) ? 'I' : static_cast<char>('A' + bank));
+					std::cout << "Converting " << bankName << (destPatch / 8 + 1) << (destPatch % 8 + 1) << ": " << toString(pVST.name) << std::endl;
 					if (targetType == InputFile::Type::SYX)
 					{
 						Patch800 p800;
@@ -491,7 +526,7 @@ int main(const int argc, char *argv[])
 			else if (targetType == InputFile::Type::SVZhardware)
 				WriteSVZforHardware(outFile, vstPatches);
 			else if (targetType == InputFile::Type::SVD)
-				WriteSVD(outFile, vstPatches, originalSVDfile);
+				WriteSVD(outFile, MergePatchesIntoSVD(vstPatches, svdOutputPatches, patchOffsetSVD) , originalSVDfile);
 
 			if(bank > 0)
 				continue;
@@ -531,7 +566,7 @@ int main(const int argc, char *argv[])
 					else if (targetType == InputFile::Type::SVZhardware)
 						WriteSVZforHardware(outFileSetup, setupPatches);
 					else if (targetType == InputFile::Type::SVD)
-						WriteSVD(outFileSetup, setupPatches, originalSVDfile);
+						WriteSVD(outFileSetup, MergePatchesIntoSVD(setupPatches, svdOutputPatches, patchOffsetSVD), originalSVDfile);
 				}
 
 				continue;

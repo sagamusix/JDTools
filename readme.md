@@ -51,7 +51,7 @@ By invoking `JDTools convert syx <input.file> <output.syx>`, the input file is c
 
 By invoking `JDTools convert bin <input.file> <output.bin>`, the input file is converted to the JD-800 VST patch bank format (BIN).
 
-By invoking `JDTools convert svd <input.file> <JD08Backup.svd>`, the input file is converted to the JD-08 patch bank format (SVD). The provided output file must be an **already existing** JD08Backup.svd file obtained from your JD-08. The file is then overwritten, but its contents are replaced with the new patch data. The output file should be named JD08Backup.svd so that the JD-08 can find it.
+By invoking `JDTools convert svd <input.file> <JD08Backup.svd> <position>`, the input file is converted to the JD-08 patch bank format (SVD). The provided output file must be an **already existing** JD08Backup.svd file obtained from your JD-08. The file is then overwritten, but its contents are replaced with the new patch data. The output file should be named JD08Backup.svd so that the JD-08 can find it. The last parameter is optional and specifies the starting patch position to overwrite. This can just be a bank (A/B/C/D) or a patch number (e.g. B42).
 
 By invoking `JDTools convert svz <input.file> <output.svz>`, the input file is converted to the ZC1 hardware patch bank format (SVZ), for use with the Jupiter-X with the JD-800 Model Expansion and potentially other hardware synthesizers based on ZenCore.
 
@@ -80,6 +80,11 @@ JDTools merge %LIST% %2
 List all the contents of a SysEx dump (or any of the other supported input formats) by invoking `JDTools list <input.syx>`. This also lists objects that JDTools cannot convert (such as the JD-800 display area), but the actual contents are not shown for most of them. Useful for easily creating a patch listing of your banks.
 
 # Version History
+
+## v0.13 (2022-09-03)
+
+- Converting to SVD format now allows to specify an optional parameter to specify the destination position of the patches, so that e.g. bank A can be preserved and converted patches are written to bank B instead.
+- JD-800 and JD-990 setups can now be converted to BIN / SVD / SVZ as well. They are written to a separate files (so if the patches are written to "Patches.bin", the setup ends up in "Patches.setup.bin"). Every key is converted to a separate patch.
 
 ## v0.12 (2022-08-04)
 
