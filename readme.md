@@ -83,12 +83,12 @@ List all the contents of a SysEx dump (or any of the other supported input forma
 
 ## v0.15 (2022-09-05)
 
-- Converting from SVD to BIN or SVZ did not split the patche banks correctly.
+- Converting from SVD to BIN or SVZ did not split the patch banks correctly.
 - Conversion to SVD could cause an incomplete SVD file to be written, which the JD-08 would then be unable to load.
 
 ## v0.14 (2022-09-05)
 
-- List all patches in BIN / SVD / SVZ files if there's more than 64 of them.
+- The `list` command now lists all patches in BIN / SVD / SVZ files if there's more than 64 of them.
 - The text output now refers to patches by their source index, not the destination index. So when converting e.g. from SVD format to SYX, the text output will list patches A11...D88 instead of going through I11...I88 four times in a row.
 
 ## v0.13 (2022-09-03)
