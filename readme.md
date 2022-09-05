@@ -81,6 +81,11 @@ List all the contents of a SysEx dump (or any of the other supported input forma
 
 # Version History
 
+## v0.14 (2022-09-05)
+
+- List all patches in BIN / SVD / SVZ files if there's more than 64 of them.
+- The text output now refers to patches by their source index, not the destination index. So when converting e.g. from SVD format to SYX, the text output will list patches A11...D88 instead of going through I11...I88 four times in a row.
+
 ## v0.13 (2022-09-03)
 
 - Converting to SVD format now allows to specify an optional parameter to specify the destination position of the patches, so that e.g. bank A can be preserved and converted patches are written to bank B instead.

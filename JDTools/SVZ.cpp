@@ -50,7 +50,7 @@ namespace
 	struct SVZHeaderHardware
 	{
 		std::array<char, 4> SVZa = { 'S', 'V', 'Z', 'a' };
-		uint16le unknown1 = 0x0202;
+		uint16le numChunks = 0x0202;  // same value twice
 		std::array<char, 10> RC = { 'R', 'C', '0', '0', '1', 1, 0, 0, 0, 0 };
 		std::array<char, 4> DIFa = { 'D', 'I', 'F', 'a' };
 		std::array<char, 4> ZCOR_1 = { 'Z', 'C', 'O', 'R' };
@@ -69,7 +69,7 @@ namespace
 		bool IsValid() const noexcept
 		{
 			const SVZHeaderHardware expected{};
-			return SVZa == expected.SVZa && unknown1 == 0x0202
+			return SVZa == expected.SVZa && numChunks == 0x0202
 				&& RC[0] == 'R' && RC[1] == 'C' && IsDigit(RC[2]) && IsDigit(RC[3]) && IsDigit(RC[4]) && RC[5] == 1 && RC[6] == 0 && RC[7] == 0 && RC[8] == 0 && RC[9] == 0
 				&& RC == expected.RC && DIFa == expected.DIFa
 				&& ZCOR_1 == expected.ZCOR_1 && unknown2 == 0x30

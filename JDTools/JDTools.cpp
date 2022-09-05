@@ -47,7 +47,7 @@ namespace
 }
 
 template<size_t Size>
-static std::string_view toString(const std::array<char, Size> &arr)
+static std::string_view ToString(const std::array<char, Size> &arr)
 {
 	return std::string_view{ arr.data(), arr.size() };
 }
@@ -87,7 +87,7 @@ JDTools merge <input1.syx> <input2.syx> <input3.syx> ... <output.syx>
   JD-990 into banks
 
 JDTools list <input.syx>
-  Lists all SysEx contents
+  Lists all SysEx / BIN / SVD / SVZ contents
 )" << std::endl;
 }
 
@@ -142,6 +142,20 @@ static std::vector<PatchVST> MergePatchesIntoSVD(std::vector<PatchVST> patches, 
 	else if (patches.size() > 256)
 		patches.resize(256);
 	return patches;
+}
+
+static std::string GetPatchIndex(const uint32_t patch, const uint32_t numPatches, const bool isCard = false)
+{
+	std::string patchIndex;
+	if (isCard)
+		patchIndex = 'C';
+	else if (numPatches <= 64)
+		patchIndex = 'I';
+	else
+		patchIndex = 'A' + static_cast<char>(patch / 64u);
+	patchIndex += '1' + ((patch / 8u) % 8u);
+	patchIndex += '1' + (patch % 8u);
+	return patchIndex;
 }
 
 
@@ -393,25 +407,6 @@ int main(const int argc, char *argv[])
 			targetExt = "svd";
 			targetName = "JD-08";
 
-			std::ifstream inFile{std::string{outFilenameBase}, std::ios::binary};
-			if (!inFile)
-			{
-				std::cout << "Could not open " << outFilenameBase << " for reading! An original JD-08 backup file is required to write the patch data into." << std::endl;
-				return 2;
-			}
-
-			svdOutputPatches = ReadSVD(inFile);
-			if (svdOutputPatches.empty())
-			{
-				std::cout << outFilenameBase << " does not appear to be a valid SVD file! An original JD-08 backup file is required to write the patch data into." << std::endl;
-				return 2;
-			}
-
-			inFile.seekg(0, std::ios::end);
-			const auto size = static_cast<size_t>(inFile.tellg());
-			inFile.seekg(0);
-			ReadVector(inFile, originalSVDfile, size);
-
 			if (argc == 6)
 			{
 				// Determine write offset
@@ -430,6 +425,25 @@ int main(const int argc, char *argv[])
 					return 2;
 				}
 			}
+
+			std::ifstream inFile{ std::string{outFilenameBase}, std::ios::binary };
+			if (!inFile)
+			{
+				std::cout << "Could not open " << outFilenameBase << " for reading! An original JD-08 backup file is required to write the patch data into." << std::endl;
+				return 2;
+			}
+
+			svdOutputPatches = ReadSVD(inFile);
+			if (svdOutputPatches.empty())
+			{
+				std::cout << outFilenameBase << " does not appear to be a valid SVD file! An original JD-08 backup file is required to write the patch data into." << std::endl;
+				return 2;
+			}
+
+			inFile.seekg(0, std::ios::end);
+			const auto size = static_cast<size_t>(inFile.tellg());
+			inFile.seekg(0);
+			ReadVector(inFile, originalSVDfile, size);
 		}
 
 		std::cout << "Converting " << sourceName << " patch format to " << targetName << "..." << std::endl;
@@ -482,7 +496,7 @@ int main(const int argc, char *argv[])
 					if (memory[address800src] == UNDEFINED_MEMORY)
 						continue;
 					const Patch800 &p800 = *reinterpret_cast<const Patch800 *>(memory.data() + address800src);
-					std::cout << "Converting I" << (destPatch / 8 + 1) << (destPatch % 8 + 1) << ": " << toString(p800.common.name) << std::endl;
+					std::cout << "Converting " << GetPatchIndex(sourcePatch, numPatches) << ": " << ToString(p800.common.name) << std::endl;
 					if (targetType == InputFile::Type::SYX)
 					{
 						Patch990 p990;
@@ -499,7 +513,7 @@ int main(const int argc, char *argv[])
 					if (memory[address990src] == UNDEFINED_MEMORY)
 						continue;
 					const Patch990 &p990 = *reinterpret_cast<const Patch990 *>(memory.data() + address990src);
-					std::cout << "Converting I" << (destPatch / 8 + 1) << (destPatch % 8 + 1) << ": " << toString(p990.common.name) << std::endl;
+					std::cout << "Converting " << GetPatchIndex(sourcePatch, numPatches) << ": " << ToString(p990.common.name) << std::endl;
 					Patch800 p800;
 					ConvertPatch990To800(p990, p800);
 					if (targetType == InputFile::Type::SYX)
@@ -510,8 +524,7 @@ int main(const int argc, char *argv[])
 				else if (sourceDeviceType == DeviceType::JD800VST)
 				{
 					const PatchVST &pVST = vstPatches[sourcePatch];
-					const std::string bankName(1, (numBanks <= 1) ? 'I' : static_cast<char>('A' + bank));
-					std::cout << "Converting " << bankName << (destPatch / 8 + 1) << (destPatch % 8 + 1) << ": " << toString(pVST.name) << std::endl;
+					std::cout << "Converting " << GetPatchIndex(sourcePatch, numPatches) << ": " << ToString(pVST.name) << std::endl;
 					if (targetType == InputFile::Type::SYX)
 					{
 						Patch800 p800;
@@ -547,7 +560,7 @@ int main(const int argc, char *argv[])
 				{
 					const SpecialSetup990 &s990 = *reinterpret_cast<const SpecialSetup990 *>(memory.data() + address990);
 					SpecialSetup800 s800;
-					std::cout << "Converting special setup: " << toString(s990.common.name) << std::endl;
+					std::cout << "Converting special setup: " << ToString(s990.common.name) << std::endl;
 					ConvertSetup990To800(s990, s800);
 					setupPatches = ConvertSetup800ToVST(s800);
 				}
@@ -587,7 +600,7 @@ int main(const int argc, char *argv[])
 			{
 				const SpecialSetup990 &s990 = *reinterpret_cast<const SpecialSetup990 *>(memory.data() + address990);
 				SpecialSetup800 s800;
-				std::cout << "Converting special setup: " << toString(s990.common.name) << std::endl;
+				std::cout << "Converting special setup: " << ToString(s990.common.name) << std::endl;
 				ConvertSetup990To800(s990, s800);
 				WriteSysEx(outFile, address800, false, s800);
 			}
@@ -595,14 +608,14 @@ int main(const int argc, char *argv[])
 			// Convert temporary patches
 			for (const auto &p800 : temporaryPatches800)
 			{
-				std::cout << "Converting temporary patch: " << toString(p800.common.name) << std::endl;
+				std::cout << "Converting temporary patch: " << ToString(p800.common.name) << std::endl;
 				Patch990 p990;
 				ConvertPatch800To990(p800, p990);
 				WriteSysEx(outFile, BASE_ADDR_990_PATCH_TEMPORARY, true, p990);
 			}
 			for (const auto &p990 : temporaryPatches990)
 			{
-				std::cout << "Converting temporary patch: " << toString(p990.common.name) << std::endl;
+				std::cout << "Converting temporary patch: " << ToString(p990.common.name) << std::endl;
 				Patch800 p800;
 				ConvertPatch990To800(p990, p800);
 				WriteSysEx(outFile, BASE_ADDR_800_PATCH_TEMPORARY, false, p800);
@@ -619,7 +632,7 @@ int main(const int argc, char *argv[])
 			{
 				const SpecialSetup990 &s990 = *reinterpret_cast<const SpecialSetup990 *>(memory.data() + BASE_ADDR_990_SETUP_TEMPORARY);
 				SpecialSetup800 s800;
-				std::cout << "Converting special setup (temporary): " << toString(s990.common.name) << std::endl;
+				std::cout << "Converting special setup (temporary): " << ToString(s990.common.name) << std::endl;
 				ConvertSetup990To800(s990, s800);
 				WriteSysEx(outFile, BASE_ADDR_800_SETUP_TEMPORARY, false, s800);
 			}
@@ -634,7 +647,7 @@ int main(const int argc, char *argv[])
 		else if (sourceDeviceType == DeviceType::JD800VST)
 			std::cout << "Nothing to merge, temporary patches are only supported in JD-800 / JD-990 SysEx dumps..." << std::endl;
 
-		const size_t numPatches = ((sourceDeviceType == DeviceType::JD800) ? temporaryPatches800.size() : temporaryPatches990.size());
+		const size_t numPatches = (sourceDeviceType == DeviceType::JD800) ? temporaryPatches800.size() : temporaryPatches990.size();
 		const size_t numBanks = (numPatches + 63) / 64;
 		size_t sourcePatch = 0;
 
@@ -659,13 +672,13 @@ int main(const int argc, char *argv[])
 				if (sourceDeviceType == DeviceType::JD800)
 				{
 					const uint32_t address800 = BASE_ADDR_800_PATCH_INTERNAL + ((destPatch * 0x03) << 7);
-					std::cout << "Adding I" << (destPatch / 8 + 1) << (destPatch % 8 + 1) << ": " << toString(temporaryPatches800[sourcePatch].common.name) << std::endl;
+					std::cout << "Adding " << GetPatchIndex(destPatch, 64) << ": " << ToString(temporaryPatches800[sourcePatch].common.name) << std::endl;
 					WriteSysEx(outFile, address800, false, temporaryPatches800[sourcePatch]);
 				}
 				else if (sourceDeviceType == DeviceType::JD990)
 				{
 					const uint32_t address990 = BASE_ADDR_990_PATCH_INTERNAL + (destPatch << 14);
-					std::cout << "Adding I" << (destPatch / 8 + 1) << (destPatch % 8 + 1) << ": " << toString(temporaryPatches990[sourcePatch].common.name) << std::endl;
+					std::cout << "Adding " << GetPatchIndex(destPatch, 64) << ": " << ToString(temporaryPatches990[sourcePatch].common.name) << std::endl;
 					WriteSysEx(outFile, address990, true, temporaryPatches990[sourcePatch]);
 				}
 			}
@@ -709,10 +722,11 @@ int main(const int argc, char *argv[])
 		}
 		else if (sourceDeviceType == DeviceType::JD800VST)
 		{
-			std::cout << "Format: JD-800 VST" << std::endl;
+			std::cout << "Format: JD-800 VST / JD-08 / ZC1" << std::endl;
 		}
 
-		for (uint32_t patch = 0; patch < 64; patch++)
+		const uint32_t numPatches = (sourceDeviceType == DeviceType::JD800VST) ? vstPatches.size() : 64u;
+		for (uint32_t patch = 0; patch < numPatches; patch++)
 		{
 			const uint32_t address800 = BASE_ADDR_800_PATCH_INTERNAL + ((patch * 0x03) << 7);
 			const uint32_t address990 = BASE_ADDR_990_PATCH_INTERNAL + (patch << 14);
@@ -721,18 +735,18 @@ int main(const int argc, char *argv[])
 				if (memory[address800] == UNDEFINED_MEMORY)
 					continue;
 				const Patch800 &p800 = *reinterpret_cast<const Patch800 *>(memory.data() + address800);
-				std::cout << "I" << (patch / 8 + 1) << (patch % 8 + 1) << ": " << toString(p800.common.name) << std::endl;
+				std::cout << GetPatchIndex(patch, numPatches) << ": " << ToString(p800.common.name) << std::endl;
 			}
 			else if (sourceDeviceType == DeviceType::JD990)
 			{
 				if (memory[address990] == UNDEFINED_MEMORY)
 					continue;
 				const Patch990 &p990 = *reinterpret_cast<const Patch990 *>(memory.data() + address990);
-				std::cout << "I" << (patch / 8 + 1) << (patch % 8 + 1) << ": " << toString(p990.common.name) << std::endl;
+				std::cout << GetPatchIndex(patch, numPatches) << ": " << ToString(p990.common.name) << std::endl;
 			}
 			else if (sourceDeviceType == DeviceType::JD800VST)
 			{
-				std::cout << "I" << (patch / 8 + 1) << (patch % 8 + 1) << ": " << toString(vstPatches[patch].name) << std::endl;
+				std::cout << GetPatchIndex(patch, numPatches) << ": " << ToString(vstPatches[patch].name) << std::endl;
 			}
 		}
 		for (uint32_t patch = 0; patch < 64; patch++)
@@ -741,18 +755,18 @@ int main(const int argc, char *argv[])
 			if (sourceDeviceType == DeviceType::JD990 && memory[addressCard990] != UNDEFINED_MEMORY)
 			{
 				const Patch990 &p990 = *reinterpret_cast<const Patch990 *>(memory.data() + addressCard990);
-				std::cout << "C" << (patch / 8 + 1) << (patch % 8 + 1) << ": " << toString(p990.common.name) << std::endl;
+				std::cout << GetPatchIndex(patch, 64, true) << ": " << ToString(p990.common.name) << std::endl;
 			}
 		}
 		if (sourceDeviceType == DeviceType::JD800 && memory[BASE_ADDR_800_PATCH_TEMPORARY] != UNDEFINED_MEMORY)
 		{
 			for (const auto &p800 : temporaryPatches800)
-				std::cout << "Temporary patch: " << toString(p800.common.name) << std::endl;
+				std::cout << "Temporary patch: " << ToString(p800.common.name) << std::endl;
 		}
 		else if (sourceDeviceType == DeviceType::JD990 && memory[BASE_ADDR_990_PATCH_TEMPORARY] != UNDEFINED_MEMORY)
 		{
 			for (const auto &p990 : temporaryPatches990)
-				std::cout << "Temporary patch: " << toString(p990.common.name) << std::endl;
+				std::cout << "Temporary patch: " << ToString(p990.common.name) << std::endl;
 		}
 
 		if (sourceDeviceType == DeviceType::JD800)
@@ -771,17 +785,17 @@ int main(const int argc, char *argv[])
 			if (memory[BASE_ADDR_990_SETUP_INTERNAL] != UNDEFINED_MEMORY)
 			{
 				const SpecialSetup990 &s990 = *reinterpret_cast<const SpecialSetup990 *>(memory.data() + BASE_ADDR_990_SETUP_INTERNAL);
-				std::cout << "Special setup (internal): " << toString(s990.common.name) << std::endl;
+				std::cout << "Special setup (internal): " << ToString(s990.common.name) << std::endl;
 			}
 			if (memory[BASE_ADDR_990_SETUP_CARD] != UNDEFINED_MEMORY)
 			{
 				const SpecialSetup990 &s990 = *reinterpret_cast<const SpecialSetup990 *>(memory.data() + BASE_ADDR_990_SETUP_CARD);
-				std::cout << "Special setup (card): " << toString(s990.common.name) << std::endl;
+				std::cout << "Special setup (card): " << ToString(s990.common.name) << std::endl;
 			}
 			if (memory[BASE_ADDR_990_SETUP_TEMPORARY] != UNDEFINED_MEMORY)
 			{
 				const SpecialSetup990 &s990 = *reinterpret_cast<const SpecialSetup990 *>(memory.data() + BASE_ADDR_990_SETUP_TEMPORARY);
-				std::cout << "Special setup (temporary): " << toString(s990.common.name) << std::endl;
+				std::cout << "Special setup (temporary): " << ToString(s990.common.name) << std::endl;
 			}
 		}
 	}
