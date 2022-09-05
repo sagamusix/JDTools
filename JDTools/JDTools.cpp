@@ -206,7 +206,7 @@ int main(const int argc, char *argv[])
 		{
 			targetType = InputFile::Type::SVZhardware;
 		}
-		else if (targetStr == "svd" || targetStr == "SVD" && (argc == 5 || argc == 6))
+		else if ((targetStr == "svd" || targetStr == "SVD") && (argc == 5 || argc == 6))
 		{
 			targetType = InputFile::Type::SVD;
 		}
@@ -455,6 +455,7 @@ int main(const int argc, char *argv[])
 		const uint32_t bankSize = (targetType == InputFile::Type::SVD) ? 256 : 64;
 		const uint32_t numBanks = (numPatches + bankSize - 1) / bankSize;
 		uint32_t sourcePatch = 0;
+		std::vector<PatchVST> bankPatchesVST(bankSize);
 
 		for (uint32_t bank = 0; bank < numBanks; bank++)
 		{
@@ -480,7 +481,7 @@ int main(const int argc, char *argv[])
 					PatchVST &pVST = vstPatches[sourcePatch];
 					if (pVST.zenHeader.modelID1 != 3 || pVST.zenHeader.modelID2 != 5)
 					{
-						std::cerr << "Ignoring patch, appears to be for another synth model!" << std::endl;
+						std::cerr << "Ignoring patch" << GetPatchIndex(sourcePatch, numPatches) << ", appears to be for another synth model!" << std::endl;
 						memset(&pVST, 0, sizeof(pVST));
 						pVST.zenHeader = PatchVST::DEFAULT_ZEN_HEADER;
 						pVST.name.fill(' ');
@@ -505,7 +506,7 @@ int main(const int argc, char *argv[])
 					}
 					else
 					{
-						ConvertPatch800ToVST(p800, vstPatches[destPatch]);
+						ConvertPatch800ToVST(p800, bankPatchesVST[destPatch]);
 					}
 				}
 				else if (sourceDeviceType == DeviceType::JD990)
@@ -519,7 +520,7 @@ int main(const int argc, char *argv[])
 					if (targetType == InputFile::Type::SYX)
 						WriteSysEx(outFile, address800dst, false, p800);
 					else
-						ConvertPatch800ToVST(p800, vstPatches[destPatch]);
+						ConvertPatch800ToVST(p800, bankPatchesVST[destPatch]);
 				}
 				else if (sourceDeviceType == DeviceType::JD800VST)
 				{
@@ -531,15 +532,19 @@ int main(const int argc, char *argv[])
 						ConvertPatchVSTTo800(pVST, p800);
 						WriteSysEx(outFile, address800dst, false, p800);
 					}
+					else
+					{
+						bankPatchesVST[destPatch] = vstPatches[sourcePatch];
+					}
 				}
 			}
 
 			if (targetType == InputFile::Type::SVZplugin)
-				WriteSVZforPlugin(outFile, vstPatches);
+				WriteSVZforPlugin(outFile, bankPatchesVST);
 			else if (targetType == InputFile::Type::SVZhardware)
-				WriteSVZforHardware(outFile, vstPatches);
+				WriteSVZforHardware(outFile, bankPatchesVST);
 			else if (targetType == InputFile::Type::SVD)
-				WriteSVD(outFile, MergePatchesIntoSVD(vstPatches, svdOutputPatches, patchOffsetSVD) , originalSVDfile);
+				WriteSVD(outFile, MergePatchesIntoSVD(bankPatchesVST, svdOutputPatches, patchOffsetSVD), originalSVDfile);
 
 			if(bank > 0)
 				continue;

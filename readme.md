@@ -81,6 +81,11 @@ List all the contents of a SysEx dump (or any of the other supported input forma
 
 # Version History
 
+## v0.15 (2022-09-05)
+
+- Converting from SVD to BIN or SVZ did not split the patche banks correctly.
+- Conversion to SVD could cause an incomplete SVD file to be written, which the JD-08 would then be unable to load.
+
 ## v0.14 (2022-09-05)
 
 - List all patches in BIN / SVD / SVZ files if there's more than 64 of them.

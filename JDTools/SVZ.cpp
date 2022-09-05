@@ -387,10 +387,15 @@ void WriteSVD(std::ostream &outFile, const std::vector<PatchVST> &vstPatches, co
 		else
 		{
 			// Just copy the original block
-			if(entry.offset < originalSVDfile.size() && entry.size < originalSVDfile.size() - entry.offset)
+			if(entry.offset < originalSVDfile.size() && entry.size <= originalSVDfile.size() - entry.offset)
+			{
 				outFile.write(originalSVDfile.data() + entry.offset, entry.size);
+			}
 			else
+			{
 				entry.size = 0;
+				std::cerr << "Dropping an SVD chunk, it appears to be truncated!" << std::endl;
+			}
 		}
 		entry.offset = offset;
 		offset += entry.size;
