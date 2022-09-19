@@ -730,7 +730,7 @@ int main(const int argc, char *argv[])
 			std::cout << "Format: JD-800 VST / JD-08 / ZC1" << std::endl;
 		}
 
-		const uint32_t numPatches = (sourceDeviceType == DeviceType::JD800VST) ? vstPatches.size() : 64u;
+		const uint32_t numPatches = static_cast<uint32_t>((sourceDeviceType == DeviceType::JD800VST) ? vstPatches.size() : 64u);
 		for (uint32_t patch = 0; patch < numPatches; patch++)
 		{
 			const uint32_t address800 = BASE_ADDR_800_PATCH_INTERNAL + ((patch * 0x03) << 7);
