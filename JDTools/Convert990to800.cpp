@@ -125,7 +125,24 @@ static void ConvertTone990To800(const uint8_t toneControlSource1, const uint8_t 
 	if (t990.wg.waveSource == 0 && t990.wg.waveformMSB > 1)
 		t800.wg.waveformMSB = 0;  // This makes sense neither with the JD-880 nor the JD-990 but was found in TECHNOJD.MID (conversion error?) - silently fix it
 	if (t990.wg.waveSource == 0 && (t800.wg.waveformMSB > 0 || t800.wg.waveformLSB > 107))
-		std::cerr << "LOSSY CONVERSION! JD-990 tone uses unsupported internal waveform: " << int((t990.wg.waveformMSB << 7) | t990.wg.waveformLSB) << std::endl;
+	{
+		const int waveform = (t990.wg.waveformMSB << 7) | t990.wg.waveformLSB;
+		std::cerr << "LOSSY CONVERSION! JD-990 tone uses unsupported internal waveform: " << waveform << std::endl;
+		// Re-map some of the "easy" waveforms that will probably be mostly compatible for many patches
+		// (without the possibility to use ring modulation, there should be no practical difference)
+		switch (waveform)
+		{
+		case 182: t800.wg.waveformLSB = 0; t800.wg.waveformMSB = 0; break;
+		case 183: t800.wg.waveformLSB = 3; t800.wg.waveformMSB = 0; break;
+		case 184: t800.wg.waveformLSB = 4; t800.wg.waveformMSB = 0; break;
+		case 185: t800.wg.waveformLSB = 5; t800.wg.waveformMSB = 0; break;
+		case 186: t800.wg.waveformLSB = 6; t800.wg.waveformMSB = 0; break;
+		case 187: t800.wg.waveformLSB = 7; t800.wg.waveformMSB = 0; break;
+		case 188: t800.wg.waveformLSB = 8; t800.wg.waveformMSB = 0; break;
+		case 189: t800.wg.waveformLSB = 10; t800.wg.waveformMSB = 0; break;
+		case 190: t800.wg.waveformLSB = 11; t800.wg.waveformMSB = 0; break;
+		}
+	}
 	if (t990.wg.fxmColor != 0 || t990.wg.fxmDepth != 0)
 		std::cerr << "LOSSY CONVERSION! JD-990 tone has FXM enabled!" << std::endl;
 	if (t990.wg.syncSlaveSwitch != 0)
@@ -230,6 +247,24 @@ static void ConvertTone990To800(const uint8_t toneControlSource1, const uint8_t 
 	ConvertToneControl(toneControlSource2, t990.cs2.destination2, t990.cs2.depth2, aTouchBend800, t800);
 	ConvertToneControl(toneControlSource2, t990.cs2.destination3, t990.cs2.depth3, aTouchBend800, t800);
 	ConvertToneControl(toneControlSource2, t990.cs2.destination4, t990.cs2.depth4, aTouchBend800, t800);
+}
+
+static void FixupStructure990To800(const uint8_t structureType, Tone800 &tone1, Tone800 &tone2)
+{
+	if (structureType == 1)
+	{
+		// Shared filters, TVA of first tone is ignored
+		tone1.tva = tone2.tva;
+		tone1.tvaEnv = tone2.tvaEnv;
+	}
+	else if (structureType > 1)
+	{
+		// When using ring modulation, ignore pitch envelope of second tone.
+		// This is really just a cheap cleanup to avoid weird pitches that were meant to go into the ring modulator.
+		tone2.pitchEnv.level0 = 50;
+		tone2.pitchEnv.level1 = 50;
+		tone2.pitchEnv.level2 = 50;
+	}
 }
 
 void ConvertPatch990To800(const Patch990 &p990, Patch800 &p800)
@@ -365,6 +400,9 @@ void ConvertPatch990To800(const Patch990 &p990, Patch800 &p800)
 	ConvertTone990To800(p990.common.toneControlSource1, p990.common.toneControlSource2, p990.toneB, p800.common.aTouchBend, p800.toneB, false);
 	ConvertTone990To800(p990.common.toneControlSource1, p990.common.toneControlSource2, p990.toneC, p800.common.aTouchBend, p800.toneC, false);
 	ConvertTone990To800(p990.common.toneControlSource1, p990.common.toneControlSource2, p990.toneD, p800.common.aTouchBend, p800.toneD, false);
+
+	FixupStructure990To800(p990.structureType.structureAB, p800.toneA, p800.toneB);
+	FixupStructure990To800(p990.structureType.structureCD, p800.toneC, p800.toneD);
 }
 
 void ConvertSetup990To800(const SpecialSetup990 &s990, SpecialSetup800 &s800)

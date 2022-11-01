@@ -1,4 +1,4 @@
-# JDTools - Patch conversion utility for Roland JD-800 / JD-990
+# JDTools - Patch conversion utility for Roland JD-800 / JD-990 and compatibles
 
 While it is easy to convert JD-800 patches to use with the JD-990 (the JD-990 itself can do it through RAM card exchange, and there are PC tools for it as well),
 there don't appear to be any tools to go in the opposite direction. In the general case this makes sense, because the JD-990 has more features.
