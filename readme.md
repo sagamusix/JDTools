@@ -16,7 +16,7 @@ Figuring out the data structures shared by the plugin, SVZ and SVD patch formats
 
 # Usage
 
-JDTools is a command line utility and has no Graphical User Interface. It can be invoked in the following ways:
+JDTools is a command line utility and has no Graphical User Interface. It can be invoked in the following ways. Values in  `<angled brackets>` indicate user-supplied values. The angled brackets must not be entered into the command line.
 
 ## Conversion
 

@@ -134,7 +134,7 @@ static void WriteSysEx(std::ofstream &f, uint32_t outAddress, const bool isJD990
 	WriteSysEx(f, outAddress, isJD990, reinterpret_cast<const uint8_t *>(&object), sizeof(object));
 }
 
-static std::vector<PatchVST> MergePatchesIntoSVD(std::vector<PatchVST> patches, const std::vector<PatchVST> &sourceFile, const size_t offset)
+static std::vector<PatchVST> MergePatchesIntoSVD(std::vector<PatchVST> patches, const std::vector<PatchVST> &sourceFile, const uint32_t offset)
 {
 	patches.insert(patches.begin(), sourceFile.begin(), sourceFile.begin() + std::min(sourceFile.size(), offset));
 	if (patches.size() < sourceFile.size())
@@ -452,7 +452,13 @@ int main(const int argc, char *argv[])
 			vstPatches.resize(64);
 
 		const uint32_t numPatches = static_cast<uint32_t>(vstPatches.size());
-		const uint32_t bankSize = (targetType == InputFile::Type::SVD) ? 256 : 64;
+		uint32_t bankSize = 64;
+		if (targetType == InputFile::Type::SVD)
+		{
+			bankSize = 256 - patchOffsetSVD;
+			if(numPatches < bankSize)
+				bankSize = numPatches;
+		}
 		const uint32_t numBanks = (numPatches + bankSize - 1) / bankSize;
 		uint32_t sourcePatch = 0;
 		std::vector<PatchVST> bankPatchesVST(bankSize);
