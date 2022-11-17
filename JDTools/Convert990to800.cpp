@@ -122,6 +122,8 @@ static void ConvertTone990To800(const uint8_t toneControlSource1, const uint8_t 
 	t800.wg.aTouchBend = 0;  // Will be populated by tone control conversion
 	t800.wg.lfo1Sens = t990.lfo1.depthPitch;
 	t800.wg.lfo2Sens = t990.lfo2.depthPitch;
+	t800.wg.leverSens = 0;      // Will be populated by tone control conversion
+	t800.wg.aTouchModSens = 0;  // Will be populated by tone control conversion
 	if (t990.wg.waveSource == 0 && t990.wg.waveformMSB > 1)
 		t800.wg.waveformMSB = 0;  // This makes sense neither with the JD-880 nor the JD-990 but was found in TECHNOJD.MID (conversion error?) - silently fix it
 	if (t990.wg.waveSource == 0 && (t800.wg.waveformMSB > 0 || t800.wg.waveformLSB > 107))
@@ -168,6 +170,7 @@ static void ConvertTone990To800(const uint8_t toneControlSource1, const uint8_t 
 	t800.tvf.cutoffFreq = t990.tvf.cutoffFreq;
 	t800.tvf.resonance = t990.tvf.resonance;
 	t800.tvf.keyFollow = t990.tvf.keyFollow;
+	t800.tvf.aTouchSens = 0;  // Will be populated by tone control conversion
 	if (t990.lfo2.depthTVF != 50)
 	{
 		t800.tvf.lfoSelect = 1;
@@ -198,6 +201,7 @@ static void ConvertTone990To800(const uint8_t toneControlSource1, const uint8_t 
 	t800.tva.biasPoint = t990.tva.biasPoint;
 	t800.tva.biasLevel = t990.tva.biasLevel;
 	t800.tva.level = t990.tva.level;
+	t800.tva.aTouchSens = 0;  // Will be populated by tone control conversion
 	if (t990.lfo2.depthTVA != 50)
 	{
 		t800.tva.lfoSelect = 1;
