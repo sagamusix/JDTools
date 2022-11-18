@@ -130,19 +130,23 @@ static void ConvertTone990To800(const uint8_t toneControlSource1, const uint8_t 
 	{
 		const int waveform = (t990.wg.waveformMSB << 7) | t990.wg.waveformLSB;
 		std::cerr << "LOSSY CONVERSION! JD-990 tone uses unsupported internal waveform: " << waveform << std::endl;
-		// Re-map some of the "easy" waveforms that will probably be mostly compatible for many patches
-		// (without the possibility to use ring modulation, there should be no practical difference)
-		switch (waveform)
+		if (waveform >= 108 && waveform <= 194)
 		{
-		case 182: t800.wg.waveformLSB = 0; t800.wg.waveformMSB = 0; break;
-		case 183: t800.wg.waveformLSB = 3; t800.wg.waveformMSB = 0; break;
-		case 184: t800.wg.waveformLSB = 4; t800.wg.waveformMSB = 0; break;
-		case 185: t800.wg.waveformLSB = 5; t800.wg.waveformMSB = 0; break;
-		case 186: t800.wg.waveformLSB = 6; t800.wg.waveformMSB = 0; break;
-		case 187: t800.wg.waveformLSB = 7; t800.wg.waveformMSB = 0; break;
-		case 188: t800.wg.waveformLSB = 8; t800.wg.waveformMSB = 0; break;
-		case 189: t800.wg.waveformLSB = 10; t800.wg.waveformMSB = 0; break;
-		case 190: t800.wg.waveformLSB = 11; t800.wg.waveformMSB = 0; break;
+			// Most of these will of course not be close to the original.
+			// The +DC variations should be "easy" to translate as there is no ring modulation on the JD-800,
+			// so there should be no practical difference in sound (except for distortion effect maybe?)
+			// For ease of cross-referencing, the indices in the table correspond to the 1-based waveform numbers found in the UI and manual
+			static constexpr uint8_t WaveformMap[] =
+			{
+				71, 72, 72, 72, 72, 19, 40, 40, 40, 58, 58, 58, 58, 38, 38, 38,
+				39, 36, 36, 70, 70, 36, 36, 36, 36, 92, 96, 96, 96, 96, 96, 94,
+				97, 20, 42, 43, 44, 45, 66, 66, 47, 47, 45, 1, 1, 107, 61, 104,
+				91, 91, 91, 84, 84, 84, 84, 84, 86, 86, 86, 86, 98, 98, 98, 86,
+				86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 1, 4, 5, 6, 7, 8,
+				9, 11, 12, 107, 107, 107, 107,
+			};
+			t800.wg.waveformLSB = WaveformMap[waveform - 108] - 1u;
+			t800.wg.waveformMSB = 0;
 		}
 	}
 	if (t990.wg.fxmColor != 0 || t990.wg.fxmDepth != 0)
