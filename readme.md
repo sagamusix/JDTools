@@ -12,7 +12,7 @@ The tool can load both SYX files (raw SysEx dumps) and MID / SMF files (Standard
 After the basic functionality was done, I wondered what would be required to support the JD-800 VST plugin or the JD-08 as well - turns out, quite a lot! Nevertheless, I managed to add support for them as well, so you can convert original JD-800 patches to the plugin's format (as long as they don't use ROM card waveforms), and also convert plugin banks to use with the original JD-800 (as long as they don't use extended features such as unison or tempo-synced LFOs).
 As the plugin appears to be based on Roland's ZenCore engine, don't expect conversions that sound 100% identical (there are well-known differences). Some parameters seem to have much lower internal precision than on a real JD-800. On the upside, the converted files also work with the Zenology plugin. But as the conversion process is quite complex, it's always possible there is a bug, so please report those if you find any.
 
-Figuring out the data structures shared by the plugin, SVZ and SVD patch formats was a lot of work, so if you find this tool useful, please consider [donating](https://paypal.me/JohannesSchultz) a few bucks.
+Figuring out the data structures shared by the plugin, SVZ and SVD patch formats was a lot of work, so if you find this tool useful, please consider [donating](https://paypal.me/JohannesSchultz) a few bucks. This would be especially appreciated if you are going to sell the converted files. Alternatively you can pay me by sending your converted sound sets. ;) 
 
 # Usage
 
@@ -91,6 +91,13 @@ JDTools merge %LIST% %2
 List all the contents of a SysEx dump (or any of the other supported input formats) by invoking `JDTools list <input.syx>`. This also lists objects that JDTools cannot convert (such as the JD-800 display area), but the actual contents are not shown for most of them. Useful for easily creating a patch listing of your banks.
 
 # Version History
+
+## v0.16 (2022-11-28)
+
+- All extended JD-990 waveforms are now replaced with JD-800 waveforms when converting to JD-800 format. Obviously a lot of those approximations will not be even close, but are hopefully still more helpful than just silent tones.
+- A few more simple fixups when doing a lossy JD-990 to JD-800 conversion.
+- Fixed conversion of JD-990 patches that don't use the expected tone control source / destination pairs.
+- When inserting patches into SVD file, the following patches are no longer overwritten with empty slots.
 
 ## v0.15 (2022-09-05)
 
