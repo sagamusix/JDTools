@@ -134,7 +134,7 @@ static void WriteSysEx(std::ofstream &f, uint32_t outAddress, const bool isJD990
 	WriteSysEx(f, outAddress, isJD990, reinterpret_cast<const uint8_t *>(&object), sizeof(object));
 }
 
-static std::vector<PatchVST> MergePatchesIntoSVD(std::vector<PatchVST> patches, const std::vector<PatchVST> &sourceFile, const uint32_t offset)
+static std::vector<PatchVST> MergePatchesIntoSVD(std::vector<PatchVST> patches, const std::vector<PatchVST> &sourceFile, const size_t offset)
 {
 	patches.insert(patches.begin(), sourceFile.begin(), sourceFile.begin() + std::min(sourceFile.size(), offset));
 	if (patches.size() < sourceFile.size())
@@ -194,15 +194,15 @@ int main(const int argc, char *argv[])
 	if (verb == "convert")
 	{
 		const std::string_view targetStr = argv[2];
-		if (targetStr == "syx" || targetStr == "SYX" && argc == 5)
+		if ((targetStr == "syx" || targetStr == "SYX") && argc == 5)
 		{
 			targetType = InputFile::Type::SYX;
 		}
-		else if(targetStr == "bin" || targetStr == "BIN" && argc == 5)
+		else if((targetStr == "bin" || targetStr == "BIN") && argc == 5)
 		{
 			targetType = InputFile::Type::SVZplugin;
 		}
-		else if (targetStr == "svz" || targetStr == "SVZ" && argc == 5)
+		else if ((targetStr == "svz" || targetStr == "SVZ") && argc == 5)
 		{
 			targetType = InputFile::Type::SVZhardware;
 		}
