@@ -7,15 +7,14 @@
 #include <array>
 #include <iostream>
 #include <vector>
+#include <cstring>
 
 struct uint16le
 {
 	uint8_t lsb, msb;
 
-	constexpr uint16le(const uint16_t value = 0) noexcept
+	constexpr uint16le(const uint16_t value = 0) noexcept : lsb(static_cast<uint8_t>(value)), msb(static_cast<uint8_t>(value >> 8))
 	{
-		lsb = static_cast<uint8_t>(value);
-		msb = static_cast<uint8_t>(value >> 8);
 	}
 
 	constexpr operator uint16_t() const noexcept
@@ -33,12 +32,8 @@ struct uint32le
 {
 	std::array<uint8_t, 4> bytes;
 
-	constexpr uint32le(const uint32_t value = 0) noexcept
+	constexpr uint32le(const uint32_t value = 0) noexcept : bytes({static_cast<uint8_t>(value), static_cast<uint8_t>(value >> 8), static_cast<uint8_t>(value >> 16), static_cast<uint8_t>(value >> 24)})
 	{
-		bytes[0] = static_cast<uint8_t>(value);
-		bytes[1] = static_cast<uint8_t>(value >> 8);
-		bytes[2] = static_cast<uint8_t>(value >> 16);
-		bytes[3] = static_cast<uint8_t>(value >> 24);
 	}
 
 	constexpr operator uint32_t() const noexcept
