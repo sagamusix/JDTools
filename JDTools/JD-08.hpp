@@ -218,7 +218,7 @@ struct ToneVSTPrecomputed
 			tvaToLFO;
 		std::array<uint8_t, 34> unknown;
 	};
-
+	
 	struct LFOs
 	{
 		ToneVSTPrecomputed::LFO lfo1;  // 936, 1040, 1144, 1248
@@ -552,6 +552,5 @@ struct PatchVST
 
 	std::array<char, 20320> empty;  // Surely we will need patches to be able to grow to ten times their current size in the future!
 
-	// static constexpr ZenHeader DEFAULT_ZEN_HEADER = { 3, 5, 0, 100, {0, 0, 0, 0, 0, 0, 0, 0} };
 	static constexpr ZenHeader DEFAULT_ZEN_HEADER = { 3, 5, 0, 100, {} };
 };
