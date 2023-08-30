@@ -32,7 +32,8 @@ struct uint32le
 {
 	std::array<uint8_t, 4> bytes;
 
-	constexpr uint32le(const uint32_t value = 0) noexcept : bytes({static_cast<uint8_t>(value), static_cast<uint8_t>(value >> 8), static_cast<uint8_t>(value >> 16), static_cast<uint8_t>(value >> 24)})
+	constexpr uint32le(const uint32_t value = 0) noexcept
+		: bytes{{static_cast<uint8_t>(value), static_cast<uint8_t>(value >> 8), static_cast<uint8_t>(value >> 16), static_cast<uint8_t>(value >> 24)}}
 	{
 	}
 
