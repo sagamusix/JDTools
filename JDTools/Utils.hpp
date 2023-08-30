@@ -13,7 +13,9 @@ struct uint16le
 {
 	uint8_t lsb, msb;
 
-	constexpr uint16le(const uint16_t value = 0) noexcept : lsb(static_cast<uint8_t>(value)), msb(static_cast<uint8_t>(value >> 8))
+	constexpr uint16le(const uint16_t value = 0) noexcept
+		: lsb{static_cast<uint8_t>(value)}
+		, msb{static_cast<uint8_t>(value >> 8)}
 	{
 	}
 
