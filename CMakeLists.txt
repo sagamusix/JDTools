@@ -1,7 +1,7 @@
 ﻿cmake_minimum_required(VERSION 3.16)
 
 project(JDTools)
-add_executable(JDTools
+add_executable(JDTool
 	JDTools/Convert800to990.cpp
 	JDTools/Convert800toVST.cpp
 	JDTools/Convert990to800.cpp
@@ -39,4 +39,4 @@ elseif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 endif()
 
-set_property(TARGET JDTools PROPERTY CXX_STANDARD 20)
+set_property(TARGET JDTool PROPERTY CXX_STANDARD 20)

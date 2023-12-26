@@ -5,6 +5,8 @@
 #pragma once
 
 #include <array>
+#include <cstring>
+#include <cstdint>
 #include <iostream>
 #include <vector>
 
