@@ -287,7 +287,7 @@ void ConvertPatchVSTTo800(const PatchVST &pVST, Patch800 &p800)
 	ConvertEQBand(EQMidFreq, p800.eq.midFreq, p800.eq.midGain, pVST.eq.midFreq, pVST.eq.midGain, pVST.eq.eqEnabled, "mid");
 	ConvertEQBand(EQHighFreq, p800.eq.highFreq, p800.eq.highGain, pVST.eq.highFreq, pVST.eq.highGain, pVST.eq.eqEnabled, "high");
 	if (!MapToArrayIndex(pVST.eq.midQ, EQMidQ, p800.eq.midQ) && pVST.eq.midGain != 0 && pVST.eq.eqEnabled)
-		std::cerr << "LOSSY CONVERSION! Unsupported EQ mid Q value: " << pVST.eq.midQ << std::endl;
+		std::cerr << "LOSSY CONVERSION! Unsupported EQ mid Q value: " << int(pVST.eq.midQ) << std::endl;
 
 	p800.midiTx.keyMode = 0;
 	p800.midiTx.splitPoint = 36;

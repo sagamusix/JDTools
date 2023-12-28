@@ -155,7 +155,7 @@ static void ConvertTone990To800(const uint8_t toneControlSource1, const uint8_t 
 		std::cerr << "LOSSY CONVERSION! JD-990 tone has sync slave switch enabled!" << std::endl;
 	if (t990.wg.toneDelayTime != 0)
 		std::cerr << "LOSSY CONVERSION! JD-990 tone has tone delay enabled!" << std::endl;
-	if (t990.wg.envDepth != 24)
+	if (t990.wg.envDepth != 24 && (t990.pitchEnv.level0 != 50 || t990.pitchEnv.level1 != 50 || t990.pitchEnv.sustainLevel != 50 || t990.pitchEnv.level3 != 50))
 		std::cerr << "LOSSY CONVERSION! JD-990 tone has pitch envelope depth level != 24: " << int(t990.wg.envDepth) << std::endl;
 
 	t800.pitchEnv.velo = t990.pitchEnv.velo;
@@ -277,9 +277,9 @@ static void FixupStructure990To800(const uint8_t structureType, Tone800 &tone1, 
 
 void ConvertPatch990To800(const Patch990 &p990, Patch800 &p800)
 {
-	if (p990.structureType.structureAB != 0)
+	if (p990.structureType.structureAB != 0 && (p990.common.activeTone & (1 | 2)) != 0)
 		std::cerr << "LOSSY CONVERSION! JD-990 patch tones AB have unsupported structure type: " << int(p990.structureType.structureAB) << std::endl;
-	if (p990.structureType.structureCD != 0)
+	if (p990.structureType.structureCD != 0 && (p990.common.activeTone & (4 | 8)) != 0)
 		std::cerr << "LOSSY CONVERSION! JD-990 patch tones CD have unsupported structure type: " << int(p990.structureType.structureCD) << std::endl;
 
 	if (p990.velocity.velocityRange1 != 0)
@@ -318,7 +318,7 @@ void ConvertPatch990To800(const Patch990 &p990, Patch800 &p800)
 		std::cerr << "LOSSY CONVERSION! JD-990 patch has analog feel != 0: " << int(p990.common.analogFeel) << std::endl;
 	if (p990.common.voicePriority != 0)
 		std::cerr << "LOSSY CONVERSION! JD-990 patch has voice priority != 0: " << int(p990.common.voicePriority) << std::endl;
-	if (p990.keyEffects.portamentoType != 1)
+	if (p990.keyEffects.portamentoType != 1 && p990.keyEffects.portamentoSW != 0)
 		std::cerr << "LOSSY CONVERSION! JD-990 patch has portamento type != 1: " << int(p990.keyEffects.portamentoType) << std::endl;
 	if (p990.keyEffects.soloSyncMaster != 0)
 		std::cerr << "LOSSY CONVERSION! JD-990 patch has solo sync master != 0: " << int(p990.keyEffects.soloSyncMaster) << std::endl;

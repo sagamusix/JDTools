@@ -380,7 +380,7 @@ int main(const int argc, char *argv[])
 		if (sourceDeviceType == DeviceType::JD800)
 			sourceName = "JD-800";
 		else if (sourceDeviceType == DeviceType::JD990)
-			sourceName = "JD-800";
+			sourceName = "JD-990";
 		else if (sourceDeviceType == DeviceType::JD800VST)
 			sourceName = "JD-800 VST / JD-08 / ZC1";
 

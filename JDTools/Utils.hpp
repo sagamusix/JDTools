@@ -5,9 +5,10 @@
 #pragma once
 
 #include <array>
+#include <cstdint>
+#include <cstring>
 #include <iostream>
 #include <vector>
-#include <cstring>
 
 struct uint16le
 {
