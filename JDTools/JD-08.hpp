@@ -129,8 +129,19 @@ struct ToneVSTPrecomputed
 		ControlSource cs2;  // 256
 		ControlSource cs3;  // 268
 		ControlSource cs4;  // 280
-		ControlSource cs5;  // Probably something completely different, given that Roland typically provides 4 modulation sources
 		uint8_t
+			unknown292_00,
+			unknown293_64,
+			unknown294_00,
+			unknown295_00,
+			unknown296_00,
+			unknown297_00,
+			unknown298_00,
+			unknown299_00,
+			unknown300_00,
+			unknown301_00,
+			unknown302_00,
+			unknown303_00,
 			unknown304_00,
 			unknown305_00,
 			unknown306_00,

@@ -119,6 +119,18 @@ static void ConvertEQBand(const T(&freqTable)[N], uint8_t &freq, uint8_t &gain, 
 		std::cerr << "LOSSY CONVERSION! Truncating EQ " << name << " gain fractional precision: " << srcGain * 0.1f << " dB" << std::endl;
 }
 
+static uint8_t ConvertPitchEnvLevel(uint8_t value)
+{
+	int converted = static_cast<int8_t>(value);
+	// Real JD-800 has a pitch envelope range of -3 octaves to +1 octave... ZenCore only supports +/-1 octave.
+	if (converted < 0)
+	{
+		converted = (converted * 46 - 25) / 50;
+	}
+
+	return static_cast<uint8_t>(converted + 50);
+}
+
 static void ConvertToneVSTTo800(const ToneVST &tVST, Tone800 &t800)
 {
 	if (tVST.wg.gain != 3 && tVST.common.layerEnabled)
@@ -194,12 +206,12 @@ static void ConvertToneVSTTo800(const ToneVST &tVST, Tone800 &t800)
 	t800.pitchEnv.velo = tVST.pitchEnv.velo + 50;
 	t800.pitchEnv.timeVelo = tVST.pitchEnv.timeVelo + 50;
 	t800.pitchEnv.timeKF = tVST.pitchEnv.timeKF + 10;
-	t800.pitchEnv.level0 = tVST.pitchEnv.level0 + 50;
+	t800.pitchEnv.level0 = ConvertPitchEnvLevel(tVST.pitchEnv.level0);
 	t800.pitchEnv.time1 = tVST.pitchEnv.time1;
-	t800.pitchEnv.level1 = tVST.pitchEnv.level1 + 50;
+	t800.pitchEnv.level1 = ConvertPitchEnvLevel(tVST.pitchEnv.level1);
 	t800.pitchEnv.time2 = tVST.pitchEnv.time2;
 	t800.pitchEnv.time3 = tVST.pitchEnv.time3;
-	t800.pitchEnv.level2 = tVST.pitchEnv.level2 + 50;
+	t800.pitchEnv.level2 = ConvertPitchEnvLevel(tVST.pitchEnv.level2);
 
 	t800.tvf.filterMode = 2 - tVST.tvf.filterMode;
 	t800.tvf.cutoffFreq = tVST.tvf.cutoffFreq;

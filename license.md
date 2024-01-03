@@ -1,6 +1,6 @@
 JDTools is released under the 3-clause BSD license:
 
-Copyright (c) 2022, Johannes Schultz
+Copyright (c) 2022 - 2024, Johannes Schultz
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

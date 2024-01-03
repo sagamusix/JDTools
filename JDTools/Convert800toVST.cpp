@@ -19,6 +19,22 @@ static T SignedTable(const T (&table)[N], int8_t offset)
 		return value;
 }
 
+static uint8_t ConvertPitchEnvLevel(uint8_t value)
+{
+	int converted = value - 50;
+	// Real JD-800 has a pitch envelope range of -3 octaves to +1 octave... ZenCore only supports +/-1 octave.
+	if (converted <= -46)
+	{
+		converted = -50;
+	}
+	else if (converted < 0)
+	{
+		converted = (converted * 50 - 23) / 46;
+	}
+
+	return static_cast<uint8_t>(converted);
+}
+
 static void ConvertTone800ToVST(const Tone800 &t800, const bool enabled, const bool selected, ToneVST &tVST)
 {
 	tVST.common.layerEnabled = enabled;
@@ -55,6 +71,11 @@ static void ConvertTone800ToVST(const Tone800 &t800, const bool enabled, const b
 	tVST.wg.pitchCoarse = t800.wg.pitchCoarse - 48;
 	tVST.wg.pitchFine= t800.wg.pitchFine - 50;
 	tVST.wg.pitchRandom = t800.wg.pitchRandom;
+	if (tVST.wg.pitchRandom > 0 && tVST.wg.pitchRandom < 20)
+	{
+		tVST.wg.pitchRandom = 20;
+		std::cerr << "LOSSY CONVERSION! Pitch Random values 1-19 do nothing, setting to 20 instead" << std::endl;
+	}
 	tVST.wg.keyFollow = t800.wg.keyFollow;
 	tVST.wg.benderSwitch = t800.wg.benderSwitch;
 	tVST.wg.aTouchBend = t800.wg.aTouchBend;
@@ -98,12 +119,16 @@ static void ConvertTone800ToVST(const Tone800 &t800, const bool enabled, const b
 	tVST.pitchEnv.velo = t800.pitchEnv.velo - 50;
 	tVST.pitchEnv.timeVelo = t800.pitchEnv.timeVelo - 50;
 	tVST.pitchEnv.timeKF = t800.pitchEnv.timeKF - 10;
-	tVST.pitchEnv.level0 = t800.pitchEnv.level0 - 50;
-	tVST.pitchEnv.level1 = t800.pitchEnv.level1 - 50;
-	tVST.pitchEnv.level2 = t800.pitchEnv.level2 - 50;
+	tVST.pitchEnv.level0 = ConvertPitchEnvLevel(t800.pitchEnv.level0);
+	tVST.pitchEnv.level1 = ConvertPitchEnvLevel(t800.pitchEnv.level1);
+	tVST.pitchEnv.level2 = ConvertPitchEnvLevel(t800.pitchEnv.level2);
 	tVST.pitchEnv.time1 = t800.pitchEnv.time1;
 	tVST.pitchEnv.time2 = t800.pitchEnv.time2;
 	tVST.pitchEnv.time3 = t800.pitchEnv.time3;
+	if (t800.pitchEnv.level0 < 4 || t800.pitchEnv.level1 < 4 || t800.pitchEnv.level2 < 4)
+	{
+		std::cerr << "LOSSY CONVERSION! Pitch envelope cannot go lower than one octave" << std::endl;
+	}
 
 	tVST.tvf.filterMode = 2 - t800.tvf.filterMode;
 	tVST.tvf.cutoffFreq = t800.tvf.cutoffFreq;
@@ -258,7 +283,7 @@ static void FillPrecomputedToneVST(const ToneVST &tVST, const PatchVST &pVST, To
 	common.cs4.destination2 = 4;   // Level
 	common.cs4.depth2 = static_cast<uint8_t>(SafeTable(AtouchSensTVA, tVST.tva.aTouchSens + 50));
 
-	common.cs5.destination1 = 0x64;
+	common.unknown293_64 = 0x64;
 
 	ToneVSTPrecomputed::PitchEnv &pitchEnv = tpVST.pitchEnv[tone];
 	pitchEnv.unknown680_33 = 0x33;
