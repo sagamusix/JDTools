@@ -1,5 +1,5 @@
 // JDTools - Patch conversion utility for Roland JD-800 / JD-990
-// 2022 by Johannes Schultz
+// 2022 - 2024 by Johannes Schultz
 // License: BSD 3-clause
 
 #pragma once
@@ -88,4 +88,11 @@ template<size_t N>
 static bool CompareMagic(const std::array<char, N> &left, const char(&right)[N + 1])
 {
 	return !std::memcmp(left.data(), right, N);
+}
+
+template<typename T, typename... Targs>
+void Reconstruct(T &x, Targs &&... args)
+{
+	x.~T();
+	new (&x) T{ std::forward<Targs>(args)... };
 }

@@ -1,5 +1,5 @@
 // JDTools - Patch conversion utility for Roland JD-800 / JD-990
-// 2022 by Johannes Schultz
+// 2022 - 2024 by Johannes Schultz
 // License: BSD 3-clause
 
 #include "JD-800.hpp"

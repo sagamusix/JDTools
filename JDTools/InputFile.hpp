@@ -1,5 +1,5 @@
 // JDTools - Patch conversion utility for Roland JD-800 / JD-990
-// 2022 by Johannes Schultz
+// 2022 - 2024 by Johannes Schultz
 // License: BSD 3-clause
 
 #pragma once
@@ -20,7 +20,7 @@ public:
 		SVD,
 	};
 
-	InputFile(std::istream& file);
+	InputFile(std::istream &file);
 
 	std::vector<uint8_t> NextSysExMessage();
 

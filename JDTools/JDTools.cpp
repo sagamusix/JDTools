@@ -1,5 +1,5 @@
 // JDTools - Patch conversion utility for Roland JD-800 / JD-990
-// 2022 by Johannes Schultz
+// 2022 - 2024 by Johannes Schultz
 // License: BSD 3-clause
 
 #include "JDTools.hpp"
@@ -246,14 +246,14 @@ int main(const int argc, char *argv[])
 		InputFile inputFile{inFile};
 		if (inputFile.GetType() == InputFile::Type::SVZplugin)
 		{
-			vstPatches = ReadSVZforPlugin(inFile);
+			vstPatches = ReadSVZ(inFile);
 			if (vstPatches.empty())
 				return 2;
 			sourceDeviceType = DeviceType::JD800VST;
 		}
 		else if (inputFile.GetType() == InputFile::Type::SVZhardware)
 		{
-			vstPatches = ReadSVZforHardware(inFile);
+			vstPatches = ReadSVZ(inFile);
 			if (vstPatches.empty())
 				return 2;
 			sourceDeviceType = DeviceType::JD800VST;
@@ -488,7 +488,7 @@ int main(const int argc, char *argv[])
 					if (pVST.zenHeader.modelID1 != 3 || pVST.zenHeader.modelID2 != 5)
 					{
 						std::cerr << "Ignoring patch" << GetPatchIndex(sourcePatch, numPatches) << ", appears to be for another synth model!" << std::endl;
-						memset(&pVST, 0, sizeof(pVST));
+						Reconstruct(pVST);
 						pVST.zenHeader = PatchVST::DEFAULT_ZEN_HEADER;
 						pVST.name.fill(' ');
 					}

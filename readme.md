@@ -12,7 +12,9 @@ The tool can load both SYX files (raw SysEx dumps) and MID / SMF files (Standard
 After the basic functionality was done, I wondered what would be required to support the JD-800 VST plugin or the JD-08 as well - turns out, quite a lot! Nevertheless, I managed to add support for them as well, so you can convert original JD-800 patches to the plugin's format (as long as they don't use ROM card waveforms), and also convert plugin banks to use with the original JD-800 (as long as they don't use extended features such as unison or tempo-synced LFOs).
 As the plugin appears to be based on Roland's ZenCore engine, don't expect conversions that sound 100% identical (there are well-known differences). Some parameters seem to have much lower internal precision than on a real JD-800. On the upside, the converted files also work with the Zenology plugin. But as the conversion process is quite complex, it's always possible there is a bug, so please report those if you find any.
 
-Figuring out the data structures shared by the plugin, SVZ and SVD patch formats was a lot of work, so if you find this tool useful, please consider [donating](https://paypal.me/JohannesSchultz) a few bucks. This would be especially appreciated if you are going to sell the converted files. Alternatively you can pay me by sending your converted sound sets. ;) 
+Figuring out the data structures shared by the plugin, SVZ and SVD patch formats was a lot of work, so if you find this tool useful, please consider [donating](https://paypal.me/JohannesSchultz) a few bucks. This would be especially appreciated if you are going to sell the converted files. Alternatively you can pay me by sending your converted sound sets. ;)
+
+You can also support me by purchasing my "[Explorations](https://lfo.sellfy.store/p/roland-jd-800-990-explorations-soundset-64-presets/)" sound bank. It is compatible with all JD models supported by this software! 
 
 # Usage
 
@@ -92,6 +94,12 @@ List all the contents of a SysEx dump (or any of the other supported input forma
 
 # Version History
 
+## v0.17 (2024-01-xx)
+
+- Fewer warnings are shown when converting from JD-990 patch format, e.g. when an incompatible structure is used but both tones of the structure are muted anyway.
+- When converting to ZenCore format, negative pitch envelope levels are scaled more appropriately and a warning is shown when negative pitch levels exceeding one octave are used (ZenCore only supports a +/-1 octave range, while the JD-800 supports a -3 to +1 octave range)
+- When converting from a JD-990 SysEx dump, the source format was not displayed correctly.
+
 ## v0.16 (2022-11-28)
 
 - All extended JD-990 waveforms are now replaced with JD-800 waveforms when converting to JD-800 format. Obviously a lot of those approximations will not be even close, but are hopefully still more helpful than just silent tones.
@@ -164,5 +172,5 @@ JDTools is provided under the BSD 3-clause license. JDTools makes use of miniz, 
 
 # Building
 
-This project is written in C++ 20. To build it, use the cross-platform CMake project, or alternatively the Visual Studio 2019 solution for Windows.
+This project is written in C++ 20. To build it, use the cross-platform CMake project, or alternatively the Visual Studio 2019 / 2022 solution for Windows.
 

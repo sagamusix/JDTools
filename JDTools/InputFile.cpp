@@ -1,5 +1,5 @@
 // JDTools - Patch conversion utility for Roland JD-800 / JD-990
-// 2022 by Johannes Schultz
+// 2022 - 2024 by Johannes Schultz
 // License: BSD 3-clause
 
 #include "InputFile.hpp"
@@ -17,13 +17,25 @@ InputFile::InputFile(std::istream &file)
 	}
 	else if (CompareMagic(magic, "SVZa"))
 	{
+		uint8_t numChunks = 0;
+		Read(m_file, numChunks);
 		m_file.seekg(16);
-		std::array<char, 4> type{};
-		Read(m_file, type);
-		if (CompareMagic(type, "EXTa"))
-			m_type = Type::SVZplugin;
-		else if (CompareMagic(type, "DIFa"))
-			m_type = Type::SVZhardware;
+		for (uint32_t chunk = 0; chunk < numChunks; chunk++)
+		{
+			std::array<char, 4> type{};
+			Read(m_file, type);
+			if (CompareMagic(type, "EXTa"))
+			{
+				m_type = Type::SVZplugin;
+				break;
+			}
+			else if (CompareMagic(type, "MDLa"))
+			{
+				m_type = Type::SVZhardware;
+				break;
+			}
+			m_file.seekg(12, std::ios::cur);
+		}
 	}
 	else if (magic[2] == 'S' && magic[3] == 'V')
 	{

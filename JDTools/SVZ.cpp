@@ -1,8 +1,9 @@
 // JDTools - Patch conversion utility for Roland JD-800 / JD-990
-// 2022 by Johannes Schultz
+// 2022 - 2024 by Johannes Schultz
 // License: BSD 3-clause
 
 #include "SVZ.hpp"
+#include "JD-08.hpp"
 #include "Utils.hpp"
 
 #include "miniz.h"
@@ -10,73 +11,111 @@
 #include <array>
 #include <cstdint>
 #include <iostream>
+#include <tuple>
 
 namespace
 {
-	constexpr bool IsDigit(const char digit)
-	{
-		return digit >= '0' && digit <= '9';
-	}
-	
-	struct SVZHeaderPlugin
+	struct SVZHeader
 	{
 		std::array<char, 4> SVZa = { 'S', 'V', 'Z', 'a' };
-		uint16le unknown1 = 1;
-		std::array<char, 8> RC1 = { 'R', 'C', '0', '0', '1', 1, 0, 0 };
-		uint16le unknown2 = 0;
-		std::array<char, 4> EXTa = { 'E', 'X', 'T', 'a' };
-		std::array<char, 4> ZCOR = { 'Z', 'C', 'O', 'R' };
-		uint32le unknown3 = 0x20;
-		uint32le compressedSize1;
-		std::array<uint32le, 6> unknown4 = { 1, 0, 32, 0, 1, 32};
-		uint32le compressedSize2;
-		uint32le compressedCRC32;
-		std::array<char, 8> RC2 = { 'R', 'C', '0', '0', '1', 1, 0, 0 };
-		uint32le uncompressedSize;
-		std::array<uint32le, 5> unknown5 = { 0, 0, 0, 0, 0 };
+		uint8_t numChunks = 1;
+		uint8_t numChunksRepeated = 1;  // Plugin (BIN) files don't repeat this value, hardware (SVZ) files do.
+		std::array<char, 6> ID = { 'R', 'C', '0', '0', '1', 1 };
+		uint32le null = 0;
 
 		bool IsValid() const noexcept
 		{
-			const SVZHeaderPlugin expected{};
-			return SVZa == expected.SVZa && unknown1 == expected.unknown1
-				&& RC1[0] == 'R' && RC1[1] == 'C' && IsDigit(RC1[2]) && IsDigit(RC1[3]) && IsDigit(RC1[4]) && RC1[5] == 1 && RC1[6] == 0 && RC1[7] == 0
-				&& RC1 == RC2 && unknown2 == expected.unknown2
-				&& EXTa == expected.EXTa && ZCOR == expected.ZCOR
-				&& unknown3 == expected.unknown3 && unknown4 == expected.unknown4
-				&& unknown5 == expected.unknown5;
+			static_assert(sizeof(SVZHeader) == 16);
+
+			const SVZHeader expected{};
+			return SVZa == expected.SVZa
+				&& (numChunksRepeated == 0 || numChunksRepeated == numChunks)
+				&& null == expected.null;
 		}
 	};
 
-	struct SVZHeaderHardware
+	struct SVZHeaderEntry
 	{
-		std::array<char, 4> SVZa = { 'S', 'V', 'Z', 'a' };
-		uint16le numChunks = 0x0202;  // same value twice
-		std::array<char, 10> RC = { 'R', 'C', '0', '0', '1', 1, 0, 0, 0, 0 };
-		std::array<char, 4> DIFa = { 'D', 'I', 'F', 'a' };
-		std::array<char, 4> ZCOR_1 = { 'Z', 'C', 'O', 'R' };
-		uint32le unknown2 = 0x30;
-		uint32le unknown3 = 0x34;
-		std::array<char, 4> MDLa = { 'M', 'D', 'L', 'a' };
-		std::array<char, 4> ZCOR_2 = { 'Z', 'C', 'O', 'R' };
-		uint32le bankOffset = 0x64;
-		uint32le bankSize = 0;  // Starting from number of patches
-		std::array<uint8_t, 52> unknown5 = { 0x01, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x42, 0x09, 0x5C, 0xA1, 0x03, 0x00, 0x86, 0xC8, 0xE5, 0x4C, 0xA5, 0x48, 0x08, 0x0C, 0x00, 0x48, 0x00, 0x48, 0x00, 0x48, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-		uint32le numPatches = 0;
-		uint32le unknown6 = 0x800;
-		uint32le bankSizeTruncated;  // Only the lower 9 bits?!
-		uint32le unknown7 = 0;
+		static constexpr std::array<char, 4> DIFa{ 'D', 'I', 'F', 'a' };
+		static constexpr std::array<char, 4> MDLa{ 'M', 'D', 'L', 'a' };
+		static constexpr std::array<char, 4> EXTa{ 'E', 'X', 'T', 'a' };
+
+		std::array<char, 4> type;
+		std::array<char, 4> ZCOR = { 'Z', 'C', 'O', 'R' };
+		uint32le offset;
+		uint32le size;
 
 		bool IsValid() const noexcept
 		{
-			const SVZHeaderHardware expected{};
-			return SVZa == expected.SVZa && numChunks == 0x0202
-				&& RC[0] == 'R' && RC[1] == 'C' && IsDigit(RC[2]) && IsDigit(RC[3]) && IsDigit(RC[4]) && RC[5] == 1 && RC[6] == 0 && RC[7] == 0 && RC[8] == 0 && RC[9] == 0
-				&& RC == expected.RC && DIFa == expected.DIFa
-				&& ZCOR_1 == expected.ZCOR_1 && unknown2 == 0x30
-				&& unknown3 == 0x34 && MDLa == expected.MDLa
-				&& ZCOR_2 == expected.ZCOR_2 && bankOffset == expected.bankOffset
-				&& unknown5 == expected.unknown5 && unknown6 == expected.unknown6
-				&& bankSizeTruncated == (bankSize & 0x1FF) && unknown7 == expected.unknown7;
+			static_assert(sizeof(SVZHeaderEntry) == 16);
+
+			return ZCOR == SVZHeaderEntry{}.ZCOR;
+		}
+	};
+
+	// Hardware
+	struct SVZChunkHeaderMDLa
+	{
+		uint32le numPatches = 0;
+		uint32le unknown1 = 0x800;
+		uint32le chunkSizeTruncated;  // Only the lower 9 bits?!
+		uint32le unknown2 = 0;
+
+		bool IsValid(const SVZHeaderEntry &chunkHeader) const noexcept
+		{
+			static_assert(sizeof(SVZChunkHeaderMDLa) == 16);
+
+			const SVZChunkHeaderMDLa expected{};
+			return chunkHeader.size >= sizeof(*this)
+				&& unknown1 == expected.unknown1
+				&& chunkSizeTruncated == (chunkHeader.size & 0x1FF)
+				&& unknown2 == expected.unknown2;
+		}
+	};
+
+	// Plugin
+	struct SVZChunkHeaderEXTa
+	{
+		std::array<uint32le, 6> unknown1 = { 1, 0, 32, 0, 1, 32 };
+		uint32le compressedSize;
+		uint32le compressedCRC32;
+		std::array<char, 8> RC = { 'R', 'C', '0', '0', '1', 1, 0, 0 };
+		uint32le uncompressedSize;
+		std::array<uint32le, 5> unknown2 = { 0, 0, 0, 0, 0 };
+
+		bool IsValid(const SVZHeaderEntry &chunkHeader) const noexcept
+		{
+			static_assert(sizeof(SVZChunkHeaderEXTa) == 64);
+
+			const SVZChunkHeaderEXTa expected{};
+			return chunkHeader.size >= sizeof(*this)
+				&& unknown1 == expected.unknown1
+				&& unknown2 == expected.unknown2;
+		}
+	};
+
+	struct SVZChunkHeaderDIFa
+	{
+		uint32le unknown1 = 0x01;
+		uint32le unknown2 = 0x20;
+		uint32le unknown3 = 0x14;
+		uint32le unknown4 = 0x00;
+		std::array<uint8_t, 20> unknown5 = {
+			0x42, 0x09, 0x5C, 0xA1,
+			0x03, 0x00, 0x86, 0xC8,
+			0xE5, 0x4C, 0xA5, 0x48,
+			0x08, 0x0C, 0x00, 0x48,
+			0x00, 0x48, 0x00, 0x48,
+		};
+		std::array<uint32le, 4> unknown6 = {0, 0, 0, 0};
+
+		bool IsValid() const noexcept
+		{
+			static_assert(sizeof(SVZChunkHeaderDIFa) == 52);
+
+			const SVZChunkHeaderDIFa expected{};
+			return std::tie(unknown1, unknown2, unknown3, unknown4, unknown5, unknown6)
+				== std::tie(expected.unknown1, expected.unknown2, expected.unknown3, expected.unknown4, expected.unknown5, expected.unknown6);
 		}
 	};
 
@@ -114,6 +153,8 @@ namespace
 
 		bool IsValid() const noexcept
 		{
+			static_assert(sizeof(SVDxHeader) == 32);
+
 			const SVDxHeader expected{};
 			return SVDx == expected.SVDx && headerSize == expected.headerSize
 				&& patchSize == expected.patchSize && numPatches > 0
@@ -122,12 +163,9 @@ namespace
 	};
 }
 
-std::vector<PatchVST> ReadSVZforPlugin(std::istream &inFile)
+std::vector<PatchVST> ReadSVZ(std::istream &inFile)
 {
-	static_assert(sizeof(SVZHeaderPlugin) == 96);
-	static_assert(sizeof(SVDxHeader) == 32);
-
-	SVZHeaderPlugin fileHeader;
+	SVZHeader fileHeader;
 	if (!Read(inFile, fileHeader))
 		return {};
 
@@ -136,80 +174,106 @@ std::vector<PatchVST> ReadSVZforPlugin(std::istream &inFile)
 		std::cerr << "Not a valid SVZ file!" << std::endl;
 		return {};
 	}
-	if (fileHeader.compressedSize1 <= 0x40 || fileHeader.compressedSize1 - 0x20 != fileHeader.compressedSize2)
-	{
-		std::cerr << "Compressed data has unexpected length!" << std::endl;
-		return {};
-	}
 
-	uint32_t compressedSize = fileHeader.compressedSize1 - 0x40;
-	std::vector<unsigned char> compressed;
-	if (!ReadVector(inFile, compressed, compressedSize))
+	for (uint32_t chunk = 0; chunk < fileHeader.numChunks; chunk++)
 	{
-		std::cerr << "Can't read compressed data!" << std::endl;
-		return {};
-	}
-	if (mz_crc32(0, compressed.data(), compressedSize) != fileHeader.compressedCRC32)
-	{
-		std::cerr << "Compressed data CRC32 mismatch!" << std::endl;
-		return {};
-	}
+		SVZHeaderEntry entry;
+		if (!Read(inFile, entry))
+			return {};
+		if (entry.type == SVZHeaderEntry::MDLa)
+		{
+			inFile.seekg(entry.offset, std::ios::beg);
+			SVZChunkHeaderMDLa chunkHeader;
+			if (!Read(inFile, chunkHeader))
+				return {};
 
-	mz_ulong uncompressedSize = fileHeader.uncompressedSize;
-	std::vector<unsigned char> uncompressed(uncompressedSize);
-	if (mz_uncompress(uncompressed.data(), &uncompressedSize, compressed.data(), compressedSize) != Z_OK)
-	{
-		std::cerr << "Error during decompression!" << std::endl;
-		return {};
+			if (!chunkHeader.IsValid(entry))
+			{
+				std::cerr << "Not a valid SVZ file!" << std::endl;
+				return {};
+			}
+
+			if (entry.size != 16 + (sizeof(uint32le) + 2048) * chunkHeader.numPatches)
+			{
+				std::cerr << "SVZ file has unexpected length!" << std::endl;
+				return {};
+			}
+
+			const uint32_t numPatches = chunkHeader.numPatches;
+			std::vector<uint32le> patchesCRC32;
+			ReadVector(inFile, patchesCRC32, numPatches);
+
+			std::vector<PatchVST> vstPatches(numPatches);
+			for (uint32_t i = 0; i < numPatches; i++)
+			{
+				PatchVST &patch = vstPatches[i];
+				inFile.read(reinterpret_cast<char*>(&patch.name), 2048);
+				const auto patchCRC32 = mz_crc32(0, reinterpret_cast<unsigned char*>(&patch.name), 2048);
+				if (patchCRC32 != patchesCRC32[i])
+					std::cerr << "Warning, CRC32 mismatch for patch " << (i + 1) << std::endl;
+				patch.zenHeader = PatchVST::DEFAULT_ZEN_HEADER;
+				if (patch.empty[29] != 1)
+				{
+					std::cerr << "Patches appear to be for different synth model!" << std::endl;
+					return {};
+				}
+				patch.empty.fill(0);
+			}
+			return vstPatches;
+		}
+		else if (entry.type == SVZHeaderEntry::EXTa)
+		{
+			inFile.seekg(entry.offset, std::ios::beg);
+			SVZChunkHeaderEXTa chunkHeader;
+			if (!Read(inFile, chunkHeader))
+				return {};
+
+			if (!chunkHeader.IsValid(entry))
+			{
+				std::cerr << "Not a valid SVZ file!" << std::endl;
+				return {};
+			}
+
+			if (entry.size - 0x20 != chunkHeader.compressedSize)
+			{
+				std::cerr << "Compressed data has unexpected length!" << std::endl;
+				return {};
+			}
+
+			uint32_t compressedSize = entry.size - 0x40;
+			std::vector<unsigned char> compressed;
+			if (!ReadVector(inFile, compressed, compressedSize))
+			{
+				std::cerr << "Can't read compressed data!" << std::endl;
+				return {};
+			}
+			if (mz_crc32(0, compressed.data(), compressedSize) != chunkHeader.compressedCRC32)
+			{
+				std::cerr << "Compressed data CRC32 mismatch!" << std::endl;
+				return {};
+			}
+
+			mz_ulong uncompressedSize = chunkHeader.uncompressedSize;
+			std::vector<unsigned char> uncompressed(uncompressedSize);
+			if (mz_uncompress(uncompressed.data(), &uncompressedSize, compressed.data(), compressedSize) != Z_OK)
+			{
+				std::cerr << "Error during decompression!" << std::endl;
+				return {};
+			}
+
+			const SVDxHeader &svdHeader = *reinterpret_cast<const SVDxHeader *>(uncompressed.data());
+			if (!svdHeader.IsValid())
+			{
+				std::cerr << "Unexpected header after decompression!" << std::endl;
+				return {};
+			}
+
+			std::vector<PatchVST> vstPatches(svdHeader.numPatches);
+			std::memcpy(vstPatches.data(), uncompressed.data() + sizeof(svdHeader), vstPatches.size() * sizeof(PatchVST));
+			return vstPatches;
+		}
 	}
-
-	const SVDxHeader &svdHeader = *reinterpret_cast<const SVDxHeader *>(uncompressed.data());
-	if (!svdHeader.IsValid())
-	{
-		std::cerr << "Unexpected header after decompression!" << std::endl;
-		return {};
-	}
-
-	std::vector<PatchVST> vstPatches(svdHeader.numPatches);
-	std::memcpy(vstPatches.data(), uncompressed.data() + sizeof(svdHeader), vstPatches.size() * sizeof(PatchVST));
-	return vstPatches;
-}
-
-std::vector<PatchVST> ReadSVZforHardware(std::istream &inFile)
-{
-	static_assert(sizeof(SVZHeaderHardware) == 116);
-	SVZHeaderHardware fileHeader;
-	if (!Read(inFile, fileHeader))
-		return {};
-
-	if (!fileHeader.IsValid())
-	{
-		std::cerr << "Not a valid SVZ file!" << std::endl;
-		return {};
-	}
-	
-	if (fileHeader.bankSize != 16 + (sizeof(uint32le) + 2048) * fileHeader.numPatches)
-	{
-		std::cerr << "SVZ file has unexpected length!" << std::endl;
-		return {};
-	}
-
-	const uint32_t numPatches = fileHeader.numPatches;
-	std::vector<uint32le> patchesCRC32;
-	ReadVector(inFile, patchesCRC32, numPatches);
-
-	std::vector<PatchVST> vstPatches(numPatches);
-	for (uint32_t i = 0; i < numPatches; i++)
-	{
-		PatchVST &patch = vstPatches[i];
-		inFile.read(reinterpret_cast<char *>(&patch.name), 2048);
-		const auto patchCRC32 = mz_crc32(0, reinterpret_cast<unsigned char *>(&patch.name), 2048);
-		if (patchCRC32 != patchesCRC32[i])
-			std::cerr << "Warning, CRC32 mismatch for patch " << (i + 1) << std::endl;
-		patch.zenHeader = PatchVST::DEFAULT_ZEN_HEADER;
-		patch.empty.fill(0);
-	}
-	return vstPatches;
+	return {};
 }
 
 std::vector<PatchVST> ReadSVD(std::istream &inFile)
@@ -295,24 +359,53 @@ void WriteSVZforPlugin(std::ostream &outFile, const std::vector<PatchVST> &vstPa
 	compressed.resize(compressedSize);
 	const auto compressedCRC32 = mz_crc32(0, compressed.data(), compressedSize);
 
-	SVZHeaderPlugin fileHeader{};
-	fileHeader.compressedSize1 = compressedSize + 0x40;
-	fileHeader.compressedSize2 = compressedSize + 0x20;
-	fileHeader.compressedCRC32 = compressedCRC32;
-	fileHeader.uncompressedSize = uncompressedSize;
-
+	SVZHeader fileHeader{};
+	fileHeader.numChunks = 1;
+	fileHeader.numChunksRepeated = 0;
 	Write(outFile, fileHeader);
+
+	SVZHeaderEntry entryEXTa;
+	entryEXTa.type = SVZHeaderEntry::EXTa;
+	entryEXTa.offset = 0x20;
+	entryEXTa.size = compressedSize + 0x40;
+	Write(outFile, entryEXTa);
+
+	SVZChunkHeaderEXTa chunkHeader;
+	chunkHeader.compressedSize = compressedSize + 0x20;
+	chunkHeader.compressedCRC32 = compressedCRC32;
+	chunkHeader.uncompressedSize = uncompressedSize;
+	Write(outFile, chunkHeader);
+
 	WriteVector(outFile, compressed);
 }
 
 void WriteSVZforHardware(std::ostream &outFile, const std::vector<PatchVST> &vstPatches)
 {
-	SVZHeaderHardware fileHeader{};
-	const uint32_t numPatches = static_cast<uint32_t>(vstPatches.size());
-	fileHeader.numPatches = numPatches;
-	fileHeader.bankSize = static_cast<uint32_t>(16 + (sizeof(uint32le) + 2048) * numPatches);
-	fileHeader.bankSizeTruncated = fileHeader.bankSize & 0x1FF;
+	SVZHeader fileHeader{};
+	fileHeader.numChunks = 2;
+	fileHeader.numChunksRepeated = 2;
 	Write(outFile, fileHeader);
+
+	const uint32_t numPatches = static_cast<uint32_t>(vstPatches.size());
+
+	SVZHeaderEntry entryDIFa;
+	entryDIFa.type = SVZHeaderEntry::DIFa;
+	entryDIFa.offset = 0x30;
+	entryDIFa.size = sizeof(SVZChunkHeaderDIFa);
+	Write(outFile, entryDIFa);
+
+	SVZHeaderEntry entryMDLa;
+	entryMDLa.type = SVZHeaderEntry::MDLa;
+	entryMDLa.offset = 0x30 + sizeof(SVZChunkHeaderDIFa);
+	entryMDLa.size = static_cast<uint32_t>(16 + (sizeof(uint32le) + 2048) * numPatches);
+	Write(outFile, entryMDLa);
+
+	Write(outFile, SVZChunkHeaderDIFa{});
+
+	SVZChunkHeaderMDLa chunkHeader;
+	chunkHeader.numPatches = numPatches;
+	chunkHeader.chunkSizeTruncated = entryMDLa.size & 0x1FF;
+	Write(outFile, chunkHeader);
 
 	std::vector<uint32le> patchesCRC32(numPatches);
 	std::vector<std::array<unsigned char, 2048>> patches(numPatches);
@@ -403,6 +496,5 @@ void WriteSVD(std::ostream &outFile, const std::vector<PatchVST> &vstPatches, co
 
 	outFile.seekp(sizeof(fileHeader));
 	WriteVector(outFile, entries);
-
-
 }
+
