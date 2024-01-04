@@ -94,7 +94,7 @@ List all the contents of a SysEx dump (or any of the other supported input forma
 
 # Version History
 
-## v0.17 (2024-01-xx)
+## v0.17 (2024-01-04)
 
 - Fewer warnings are shown when converting from JD-990 patch format, e.g. when an incompatible structure is used but both tones of the structure are muted anyway.
 - When converting to ZenCore format, negative pitch envelope levels are scaled more appropriately and a warning is shown when negative pitch levels exceeding one octave are used (ZenCore only supports a +/-1 octave range, while the JD-800 supports a -3 to +1 octave range)
