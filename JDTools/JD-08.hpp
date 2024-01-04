@@ -438,7 +438,7 @@ struct PatchVST
 	struct EffectsGroupA
 	{
 		uint8_t
-			unknown48_5D,
+			mfxType,
 			groupAenabled,
 			unknown50_7F,
 			unknown51_7F;

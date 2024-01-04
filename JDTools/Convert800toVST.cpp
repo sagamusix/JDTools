@@ -337,10 +337,10 @@ static void FillPrecomputedToneVST(const ToneVST &tVST, const PatchVST &pVST, To
 
 void ConvertPatch800ToVST(const Patch800 &p800, PatchVST &pVST)
 {
-	pVST.zenHeader = { 3, 5, 0, 100, {} };
+	pVST.zenHeader = PatchVST::DEFAULT_ZEN_HEADER;
 	pVST.name = p800.common.name;
 
-	pVST.effectsGroupA.unknown48_5D = 93;
+	pVST.effectsGroupA.mfxType = 93;
 	pVST.effectsGroupA.groupAenabled = 1;
 	pVST.effectsGroupA.unknown50_7F = 127;
 	pVST.effectsGroupA.unknown51_7F = 127;

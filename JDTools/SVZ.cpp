@@ -207,16 +207,16 @@ std::vector<PatchVST> ReadSVZ(std::istream &inFile)
 			for (uint32_t i = 0; i < numPatches; i++)
 			{
 				PatchVST &patch = vstPatches[i];
-				inFile.read(reinterpret_cast<char*>(&patch.name), 2048);
-				const auto patchCRC32 = mz_crc32(0, reinterpret_cast<unsigned char*>(&patch.name), 2048);
+				inFile.read(reinterpret_cast<char *>(&patch.name), 2048);
+				const auto patchCRC32 = mz_crc32(0, reinterpret_cast<unsigned char *>(&patch.name), 2048);
 				if (patchCRC32 != patchesCRC32[i])
 					std::cerr << "Warning, CRC32 mismatch for patch " << (i + 1) << std::endl;
-				patch.zenHeader = PatchVST::DEFAULT_ZEN_HEADER;
 				if (patch.empty[29] != 1)
 				{
 					std::cerr << "Patches appear to be for different synth model!" << std::endl;
 					return {};
 				}
+				patch.zenHeader = PatchVST::DEFAULT_ZEN_HEADER;
 				patch.empty.fill(0);
 			}
 			return vstPatches;
@@ -343,7 +343,7 @@ std::vector<PatchVST> ReadSVD(std::istream &inFile)
 void WriteSVZforPlugin(std::ostream &outFile, const std::vector<PatchVST> &vstPatches)
 {
 	std::vector<unsigned char> uncompressed(sizeof(SVDxHeader) + vstPatches.size() * sizeof(PatchVST));
-	SVDxHeader &svdHeader = *reinterpret_cast<SVDxHeader*>(uncompressed.data());
+	SVDxHeader &svdHeader = *reinterpret_cast<SVDxHeader *>(uncompressed.data());
 	svdHeader = SVDxHeader{};
 	svdHeader.numPatches = static_cast<uint32_t>(vstPatches.size());
 	std::memcpy(uncompressed.data() + sizeof(SVDxHeader), vstPatches.data(), vstPatches.size() * sizeof(PatchVST));
