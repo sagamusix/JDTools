@@ -116,6 +116,9 @@ JDTools merge <input1.syx> <input2.syx> <input3.syx> ... <output.syx>
 
 JDTools list <input.syx>
   Lists all SysEx / BIN / SVD / SVZ contents
+
+JDTools verify <input.syx>
+  Verifies checksum of SySex dumps without doing any conversion
 )" << std::endl;
 }
 
@@ -203,12 +206,14 @@ int main(const int argc, char *argv[])
 
 	const std::string_view verb = argv[1];
 	int numInputFiles = 1, firstFileParam = 2;
-	if (verb != "convert" && verb != "list" && verb != "merge")
+	bool verifyOnly = (verb == "verify"), verifyFailed = false;
+	int numVerifiedSysExMessages = 0;
+	if (verb != "convert" && verb != "list" && verb != "verify" && verb != "merge")
 	{
 		PrintUsage();
 		return 1;
 	}
-	if ((verb == "list" && argc != 3) || (verb == "merge" && argc < 4))
+	if ((verb == "list" && argc != 3) || (verb == "verify" && argc != 3) || (verb == "merge" && argc < 4))
 	{
 		PrintUsage();
 		return 1;
@@ -322,7 +327,7 @@ int main(const int argc, char *argv[])
 
 				if (ch == 0x3D)
 				{
-					if (sourceDeviceType == DeviceType::JD990)
+					if (sourceDeviceType == DeviceType::JD990 && !verifyOnly)
 					{
 						std::cout << "WARNING: File contains mixed JD-800 and JD-990 dumps. Only JD-990 dumps will be processed." << std::endl;
 						continue;
@@ -331,7 +336,7 @@ int main(const int argc, char *argv[])
 				}
 				else if (ch == 0x57)
 				{
-					if (sourceDeviceType == DeviceType::JD800)
+					if (sourceDeviceType == DeviceType::JD800 && !verifyOnly)
 					{
 						std::cout << "WARNING: File contains mixed JD-800 and JD-990 dumps. Only JD-800 dumps will be processed." << std::endl;
 						continue;
@@ -358,7 +363,15 @@ int main(const int argc, char *argv[])
 				if (checksum != 0)
 				{
 					std::cerr << "Invalid SysEx checksum!" << std::endl;
-					return 3;
+					if (verifyOnly)
+						verifyFailed = true;
+					else
+						return 3;
+				}
+				if (verifyOnly)
+				{
+					numVerifiedSysExMessages++;
+					continue;
 				}
 
 				// Remove checksum byte
@@ -392,10 +405,25 @@ int main(const int argc, char *argv[])
 		}
 	}
 
-	if (sourceDeviceType == DeviceType::Undetermined)
+	if (sourceDeviceType == DeviceType::Undetermined || (numVerifiedSysExMessages == 0 && verifyOnly))
 	{
 		std::cout << "Input didn't contain any SysEx messages for either JD-800 or JD-990!" << std::endl;
 		return 2;
+	}
+
+	if (verifyOnly)
+	{
+		if (verifyFailed)
+		{
+
+			std::cout << "SysEx dumps contained errors!" << std::endl;
+			return 3;
+		}
+		else
+		{
+			std::cout << numVerifiedSysExMessages << " SysEx dumps verified without errors." << std::endl;
+			return 0;
+		}
 	}
 
 	if (verb == "convert")
