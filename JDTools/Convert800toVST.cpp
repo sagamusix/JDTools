@@ -98,18 +98,18 @@ static void ConvertTone800ToVST(const Tone800 &t800, const bool enabled, const b
 	else if (tVST.wg.waveformLSB == 105)
 		tVST.wg.pitchFine -= 50;
 
-	if (static_cast<int8_t>(tVST.wg.pitchFine) < -50)
+	if (tVST.wg.pitchFine < -50)
 	{
 		tVST.wg.pitchFine += 100;
 		tVST.wg.pitchCoarse--;
 	}
-	if (static_cast<int8_t>(tVST.wg.pitchCoarse) < -48)
+	if (tVST.wg.pitchCoarse < -48)
 	{
-		tVST.wg.pitchCoarse = static_cast<uint8_t>(-48);
+		tVST.wg.pitchCoarse = -48;
 		if (tVST.common.layerEnabled)
 			std::cerr << "LOSSY CONVERSION! Tone coarse pitch too low (maybe due to waveform transposition)" << std::endl;
 	}
-	else if (static_cast<int8_t>(tVST.wg.pitchCoarse) > 48)
+	else if (tVST.wg.pitchCoarse > 48)
 	{
 		tVST.wg.pitchCoarse = 48;
 		if (tVST.common.layerEnabled)
@@ -184,8 +184,8 @@ static void FillPrecomputedLFO(const ToneVST::LFO &tLFO, const uint8_t lfoIndex,
 	if (tLFO.delay == 101)
 		lfo.delayOnRelease = 2;
 	lfo.delay = SafeTable(LFODelay, tLFO.delay);
-	lfo.negativeFade = (static_cast<int8_t>(tLFO.fade) < 0) ? 1 : 0;
-	lfo.fade = SafeTable(LFOFade, static_cast<uint8_t>(std::abs(static_cast<int8_t>(tLFO.fade))));
+	lfo.negativeFade = (tLFO.fade < 0) ? 1 : 0;
+	lfo.fade = SafeTable(LFOFade, static_cast<uint8_t>(std::abs(tLFO.fade)));
 	lfo.keyTrigger = tLFO.keyTrigger;
 	lfo.pitchToLFO = SignedTable(PitchToLFOSens, (lfoIndex == 0) ? tVST.wg.lfo1Sens : tVST.wg.lfo2Sens);
 	if (tVST.tvf.lfoSelect == lfoIndex)
@@ -254,7 +254,7 @@ static void FillPrecomputedToneVST(const ToneVST &tVST, const PatchVST &pVST, To
 	common.cs1.destination3 = 1;  // Pitch
 	if (tVST.wg.aTouchBend)
 	{
-		common.cs1.depth1 = SignedTable(ATouchBend, static_cast<int8_t>(pVST.common.aTouchBend) - 14);
+		common.cs1.depth1 = SignedTable(ATouchBend, pVST.common.aTouchBend - 14);
 		common.cs1.depth2 = (pVST.common.aTouchBend < 2) ? -63 : 0;
 		common.cs1.depth3 = (pVST.common.aTouchBend < 1) ? -63 : 0;
 	}
@@ -359,7 +359,7 @@ void ConvertPatch800ToVST(const Patch800 &p800, PatchVST &pVST)
 	pVST.effectsGroupA.distortionLevel = p800.effect.distortionLevel;
 	pVST.effectsGroupA.phaserEnabled = BlockEnabledA[SafeTable(PhaserPos, p800.effect.groupAsequence)];
 	pVST.effectsGroupA.phaserManual = p800.effect.phaserManual;
-	pVST.effectsGroupA.phaserRate = p800.effect.phaserRate;
+	pVST.effectsGroupA.phaserRate = p800.effect.phaserRate + 1;
 	pVST.effectsGroupA.phaserDepth = p800.effect.phaserDepth;
 	pVST.effectsGroupA.phaserResonance = p800.effect.phaserResonance;
 	pVST.effectsGroupA.phaserMix = p800.effect.phaserMix;

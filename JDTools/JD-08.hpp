@@ -283,8 +283,10 @@ struct ToneVST
 			tempoSync,  // Extended feature (0 = off, 1 = on)
 			rate,
 			rateWithTempoSync,  // Extended feature
-			delay,
-			fade,  // +50
+			delay;
+		int8_t
+			fade;  // +50
+		uint8_t
 			offset,
 			keyTrigger;
 	};
@@ -294,13 +296,16 @@ struct ToneVST
 		uint8_t
 			waveformLSB,     // 0 = no waveform
 			unknown1637_00,  // Maybe MSB of waveform?
-			unknown1638_00,
+			unknown1638_00;
+		int8_t
 			gain,         // Extended feature
 			pitchCoarse,  // +48
-			pitchFine,    // +50
+			pitchFine;    // +50
+		uint8_t
 			pitchRandom,
 			keyFollow,
-			benderSwitch,
+			benderSwitch;
+		int8_t
 			aTouchBend,
 			lfo1Sens,       // +50
 			lfo2Sens,       // +50
@@ -310,13 +315,14 @@ struct ToneVST
 
 	struct PitchEnv
 	{
-		uint8_t
+		int8_t
 			velo,      // +50
 			timeVelo,  // +50
 			timeKF,    // +10
 			level0,    // +50
 			level1,    // +50
-			level2,    // +50
+			level2;    // +50
+		uint8_t
 			time1,
 			time2,
 			time3;
@@ -337,10 +343,11 @@ struct ToneVST
 
 	struct TVFEnv
 	{
-		uint8_t
+		int8_t
 			velo,      // +50
 			timeVelo,  // +50
-			timeKF,    // +10
+			timeKF;    // +10
+		uint8_t
 			level1,
 			level2,
 			sustainLevel,

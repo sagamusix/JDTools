@@ -346,7 +346,7 @@ void ConvertPatchVSTTo800(const PatchVST &pVST, Patch800 &p800)
 	p800.effect.distortionLevel = pVST.effectsGroupA.distortionLevel.lsb;
 
 	p800.effect.phaserManual = pVST.effectsGroupA.phaserManual.lsb;
-	p800.effect.phaserRate = pVST.effectsGroupA.phaserRate.lsb;
+	p800.effect.phaserRate = std::max(pVST.effectsGroupA.phaserRate.lsb, uint8_t(1)) - 1;
 	p800.effect.phaserDepth = pVST.effectsGroupA.phaserDepth.lsb;
 	p800.effect.phaserResonance = pVST.effectsGroupA.phaserResonance.lsb;
 	p800.effect.phaserMix = pVST.effectsGroupA.phaserMix.lsb;
