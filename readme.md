@@ -92,7 +92,18 @@ JDTools merge %LIST% %2
 
 List all the contents of a SysEx dump (or any of the other supported input formats) by invoking `JDTools list <input.syx>`. This also lists objects that JDTools cannot convert (such as the JD-800 display area), but the actual contents are not shown for most of them. Useful for easily creating a patch listing of your banks.
 
+## Verifying
+
+To check if a SysEx dump (SYX or MID) contains any checksum errors, invoke `JDTools verify <input.syx>`.
+
 # Version History
+
+## v0.18 (2024-09-19)
+
+- New verb "verify" to check if SysEx dumps contain any errors.
+- Phaser rate conversion was off-by-one. Converting a phaser rate of 0.1 from SysEx to ZenCore format resulted in a much faster phaser.
+- When converting from SVZ files, disable effect section A if didn't use the JD Multi effect. Such files couldn't be loaded by the JD-800 plugin, and the JD-800 would use bogus effect settings.
+- If the source file contained less than 64 patches, the resulting BIN file could not be loaded by the JD-800 VST plugin.
 
 ## v0.17 (2024-01-04)
 
