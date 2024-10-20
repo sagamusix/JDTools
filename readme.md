@@ -14,7 +14,7 @@ As the plugin appears to be based on Roland's ZenCore engine, don't expect conve
 
 Figuring out the data structures shared by the plugin, SVZ and SVD patch formats was a lot of work, so if you find this tool useful, please consider [donating](https://paypal.me/JohannesSchultz) a few bucks. This would be especially appreciated if you are going to sell the converted files. Alternatively you can pay me by sending your converted sound sets. ;)
 
-You can also support me by purchasing my "[Explorations](https://lfo.sellfy.store/p/roland-jd-800-990-explorations-soundset-64-presets/)" sound bank. It is compatible with all JD models supported by this software! 
+You can also support me by purchasing my "[Explorations Vol. 1](https://lfo.sellfy.store/p/roland-jd-800-990-explorations-soundset-64-presets/)" and  "[Explorations Vol. 2](https://lfo.sellfy.store/p/roland-jd-800-990-explorations-vol2-soundset-64-presets/)" sound banks. They are compatible with all JD models supported by this software! 
 
 # Usage
 
