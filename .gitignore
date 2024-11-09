@@ -1,6 +1,7 @@
 .vs
 Debug
 Release
+build
 x64
 out
 *.user
