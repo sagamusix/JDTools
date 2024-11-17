@@ -3,7 +3,7 @@
 // Used by JDTools.rc
 
 #define VER_MAJORMAJOR 0
-#define VER_MAJOR 18
+#define VER_MAJOR 19
 #define VER_MINOR 0
 #define VER_MINORMINOR 0
 

@@ -102,6 +102,10 @@ Any number of input files can be specified.
 
 # Version History
 
+## v0.19 (2024-11-17)
+
+- New verb "list-verbose" to list all patch or special setup parameters.
+
 ## v0.18 (2024-09-19)
 
 - New verb "verify" to check if SysEx dumps contain any errors.
