@@ -78,7 +78,7 @@ BEGIN
             VALUE "FileDescription", "JDTools - Patch conversion utility for Roland JD-800 / JD-990 and compatibles"
             VALUE "FileVersion", VER_FILEVERSION_STR
             VALUE "InternalName", "JDTools.exe"
-            VALUE "LegalCopyright", "Copyright (C) 2022 - 2004 Johannes Schultz"
+            VALUE "LegalCopyright", "Copyright (C) 2022 - 2024 Johannes Schultz"
             VALUE "OriginalFilename", "JDTools.exe"
             VALUE "ProductName", "JDTools"
             VALUE "ProductVersion", VER_FILEVERSION_STR

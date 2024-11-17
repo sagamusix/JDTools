@@ -126,6 +126,18 @@ struct Tone800
 	TVAEnv tvaEnv;
 };
 
+struct EQ800
+{
+	uint8_t
+		lowFreq,
+		lowGain,
+		midFreq,
+		midQ,
+		midGain,
+		highFreq,
+		highGain;
+};
+
 struct Patch800
 {
 	struct Common
@@ -151,18 +163,6 @@ struct Patch800
 			portamentoTime,
 			layerTone,
 			activeTone;
-	};
-
-	struct EQ
-	{
-		uint8_t
-			lowFreq,
-			lowGain,
-			midFreq,
-			midQ,
-			midGain,
-			highFreq,
-			highGain;
 	};
 
 	struct MidiTx
@@ -237,7 +237,7 @@ struct Patch800
 	};
 
 	Common common;
-	EQ eq;
+	EQ800 eq;
 	MidiTx midiTx;
 	Effect effect;
 	Tone800 toneA;
@@ -248,18 +248,6 @@ struct Patch800
 
 struct SpecialSetup800
 {
-	struct EQ
-	{
-		uint8_t
-			lowFreq,
-			lowGain,
-			midFreq,
-			midQ,
-			midGain,
-			highFreq,
-			highGain;
-	};
-
 	struct Common
 	{
 		uint8_t
@@ -281,7 +269,7 @@ struct SpecialSetup800
 		Tone800 tone;
 	};
 	
-	EQ eq;
+	EQ800 eq;
 	Common common;
 	std::array<Key, 61> keys;
 };

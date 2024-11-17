@@ -9,6 +9,8 @@
 struct Patch800;
 struct Patch990;
 struct PatchVST;
+struct SpecialSetup800;
+struct SpecialSetup990;
 
 void ConvertPatch800To990(const Patch800 &p800, Patch990 &p990);
 void ConvertPatch990To800(const Patch990 &p990, Patch800 &p800);
@@ -22,3 +24,9 @@ struct SpecialSetup990;
 void ConvertSetup800To990(const SpecialSetup800 &s800, SpecialSetup990 &s990);
 void ConvertSetup990To800(const SpecialSetup990 &s990, SpecialSetup800 &s800);
 std::vector<PatchVST> ConvertSetup800ToVST(const SpecialSetup800 &s800);
+
+void PrintPatch(const Patch800 &patch);
+void PrintPatch(const Patch990 &patch);
+void PrintPatch(const PatchVST &patch);
+void PrintSetup(const SpecialSetup800 &setup);
+void PrintSetup(const SpecialSetup990 &setup);

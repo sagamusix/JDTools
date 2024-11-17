@@ -305,7 +305,7 @@ void ConvertSetup800To990(const SpecialSetup800 &s800, SpecialSetup990 &s990)
 
 	s990.effect.reverbType = 4;
 	s990.effect.reverbPreDelay = 0;
-	s990.effect.reveryEarlyRefLevel = 8;
+	s990.effect.reverbEarlyRefLevel = 8;
 	s990.effect.reverbHFDamp = 13;
 	s990.effect.reverbTime = 44;
 	s990.effect.reverbLevel = 40;

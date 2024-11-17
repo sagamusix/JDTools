@@ -92,9 +92,13 @@ JDTools merge %LIST% %2
 
 List all the contents of a SysEx dump (or any of the other supported input formats) by invoking `JDTools list <input.syx>`. This also lists objects that JDTools cannot convert (such as the JD-800 display area), but the actual contents are not shown for most of them. Useful for easily creating a patch listing of your banks.
 
+You can also invoke  `JDTools list-verbose <input.syx>` to list all the parameter values of each patch or special setup.
+
 ## Verifying
 
 To check if a SysEx dump (SYX or MID) contains any checksum errors, invoke `JDTools verify <input.syx>`.
+
+Any number of input files can be specified.
 
 # Version History
 

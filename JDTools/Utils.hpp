@@ -84,6 +84,12 @@ static T SafeTable(const T (&table)[N], uint8_t offset)
 		return table[N - 1];
 }
 
+template<size_t Size>
+static std::string_view ToString(const std::array<char, Size> &arr)
+{
+	return std::string_view{ arr.data(), arr.size() };
+}
+
 template<size_t N>
 static bool CompareMagic(const std::array<char, N> &left, const char(&right)[N + 1])
 {

@@ -173,6 +173,7 @@
     <ClCompile Include="InputFile.cpp" />
     <ClCompile Include="JDTools.cpp" />
     <ClCompile Include="miniz.c" />
+    <ClCompile Include="PrintPatchData.cpp" />
     <ClCompile Include="SVZ.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -186,6 +187,7 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="SVZ.hpp" />
     <ClInclude Include="Utils.hpp" />
+    <ClInclude Include="WaveformNames.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="JDTools.rc" />

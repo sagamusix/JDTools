@@ -74,12 +74,6 @@ namespace
 	};
 }
 
-template<size_t Size>
-static std::string_view ToString(const std::array<char, Size> &arr)
-{
-	return std::string_view{ arr.data(), arr.size() };
-}
-
 static void PrintUsage()
 {
 	std::cout <<
@@ -117,7 +111,10 @@ JDTools merge <input1.syx> <input2.syx> <input3.syx> ... <output.syx>
 JDTools list <input.syx>
   Lists all SysEx / BIN / SVD / SVZ contents
 
-JDTools verify <input.syx>
+JDTools list-verbose <input.syx>
+  Lists all SysEx / BIN / SVD / SVZ contents, including all patch or special setup parameters
+
+JDTools verify <input1.syx> <input2.syx> <input3.syx> ...
   Verifies checksum of SySex dumps without doing any conversion
 )" << std::endl;
 }
@@ -208,17 +205,21 @@ int main(const int argc, char *argv[])
 	int numInputFiles = 1, firstFileParam = 2;
 	bool verifyOnly = (verb == "verify"), verifyFailed = false;
 	int numVerifiedSysExMessages = 0;
-	if (verb != "convert" && verb != "list" && verb != "verify" && verb != "merge")
+	if (verb != "convert" && verb != "list" && verb != "list-verbose" && verb != "verify" && verb != "merge")
 	{
 		PrintUsage();
 		return 1;
 	}
-	if ((verb == "list" && argc != 3) || (verb == "verify" && argc != 3) || (verb == "merge" && argc < 4))
+	if ((verb == "list" && argc != 3) || (verb == "list-verbose" && argc != 3) || (verb == "verify" && argc < 3) || (verb == "merge" && argc < 4))
 	{
 		PrintUsage();
 		return 1;
 	}
-	if (verb == "merge")
+	if (verb == "verify")
+	{
+		numInputFiles = argc - 2;
+	}
+	else if (verb == "merge")
 	{
 		numInputFiles = argc - 3;
 	}
@@ -300,6 +301,11 @@ int main(const int argc, char *argv[])
 		}
 		else
 		{
+			if (verifyOnly)
+			{
+				std::cout << "Verifying " << inFilename << "..." << std::endl;
+			}
+
 			do
 			{
 				message = inputFile.NextSysExMessage();
@@ -415,7 +421,6 @@ int main(const int argc, char *argv[])
 	{
 		if (verifyFailed)
 		{
-
 			std::cout << "SysEx dumps contained errors!" << std::endl;
 			return 3;
 		}
@@ -765,8 +770,10 @@ int main(const int argc, char *argv[])
 		}
 
 	}
-	else if (verb == "list")
+	else if (verb == "list" || verb == "list-verbose")
 	{
+		const bool verbose = verb == "list-verbose";
+
 		if (sourceDeviceType == DeviceType::JD800)
 		{
 			std::cout << "Format: JD-800" << std::endl;
@@ -816,6 +823,8 @@ int main(const int argc, char *argv[])
 					continue;
 				const Patch800 &p800 = *reinterpret_cast<const Patch800 *>(memory.data() + address800);
 				std::cout << GetPatchIndex(patch, numPatches) << ": " << ToString(p800.common.name) << std::endl;
+				if (verbose)
+					PrintPatch(p800);
 			}
 			else if (sourceDeviceType == DeviceType::JD990)
 			{
@@ -823,10 +832,14 @@ int main(const int argc, char *argv[])
 					continue;
 				const Patch990 &p990 = *reinterpret_cast<const Patch990 *>(memory.data() + address990);
 				std::cout << GetPatchIndex(patch, numPatches) << ": " << ToString(p990.common.name) << std::endl;
+				if (verbose)
+					PrintPatch(p990);
 			}
 			else if (sourceDeviceType == DeviceType::JD800VST)
 			{
 				std::cout << GetPatchIndex(patch, numPatches) << ": " << ToString(vstPatches[patch].name) << std::endl;
+				if (verbose)
+					PrintPatch(vstPatches[patch]);
 			}
 		}
 		for (uint32_t patch = 0; patch < 64; patch++)
@@ -853,11 +866,17 @@ int main(const int argc, char *argv[])
 		{
 			if (memory[BASE_ADDR_800_SETUP_INTERNAL] != UNDEFINED_MEMORY)
 			{
+				const SpecialSetup800 &s800 = *reinterpret_cast<const SpecialSetup800 *>(memory.data() + BASE_ADDR_800_SETUP_INTERNAL);
 				std::cout << "Special setup (internal): JD-800 Drum Set" << std::endl;
+				if (verbose)
+					PrintSetup(s800);
 			}
 			if (memory[BASE_ADDR_800_SETUP_TEMPORARY] != UNDEFINED_MEMORY)
 			{
+				const SpecialSetup800 &s800 = *reinterpret_cast<const SpecialSetup800 *>(memory.data() + BASE_ADDR_800_SETUP_TEMPORARY);
 				std::cout << "Special setup (temporary): JD-800 Drum Set" << std::endl;
+				if (verbose)
+					PrintSetup(s800);
 			}
 		}
 		else if (sourceDeviceType == DeviceType::JD990)
@@ -866,16 +885,22 @@ int main(const int argc, char *argv[])
 			{
 				const SpecialSetup990 &s990 = *reinterpret_cast<const SpecialSetup990 *>(memory.data() + BASE_ADDR_990_SETUP_INTERNAL);
 				std::cout << "Special setup (internal): " << ToString(s990.common.name) << std::endl;
+				if (verbose)
+					PrintSetup(s990);
 			}
 			if (memory[BASE_ADDR_990_SETUP_CARD] != UNDEFINED_MEMORY)
 			{
 				const SpecialSetup990 &s990 = *reinterpret_cast<const SpecialSetup990 *>(memory.data() + BASE_ADDR_990_SETUP_CARD);
 				std::cout << "Special setup (card): " << ToString(s990.common.name) << std::endl;
+				if (verbose)
+					PrintSetup(s990);
 			}
 			if (memory[BASE_ADDR_990_SETUP_TEMPORARY] != UNDEFINED_MEMORY)
 			{
 				const SpecialSetup990 &s990 = *reinterpret_cast<const SpecialSetup990 *>(memory.data() + BASE_ADDR_990_SETUP_TEMPORARY);
 				std::cout << "Special setup (temporary): " << ToString(s990.common.name) << std::endl;
+				if (verbose)
+					PrintSetup(s990);
 			}
 		}
 	}

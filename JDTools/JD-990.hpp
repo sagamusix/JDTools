@@ -143,6 +143,18 @@ struct Tone990
 	ControlSource cs2;
 };
 
+struct EQ990
+{
+	uint8_t
+		lowFreq,
+		lowGain,
+		midFreq,
+		midQ,
+		midGain,
+		highFreq,
+		highGain;
+};
+
 struct Patch990
 {
 	struct Common
@@ -171,18 +183,6 @@ struct Patch990
 			soloSW,
 			soloLegato,
 			soloSyncMaster;  // 990 only
-	};
-
-	struct EQ
-	{
-		uint8_t
-			lowFreq,
-			lowGain,
-			midFreq,
-			midQ,
-			midGain,
-			highFreq,
-			highGain;
 	};
 
 	struct StructureType
@@ -294,7 +294,7 @@ struct Patch990
 
 	Common common;
 	KeyEffects keyEffects;
-	EQ eq;
+	EQ990 eq;
 	StructureType structureType;
 	KeyRanges keyRanges;
 	Velocity velocity;  // 990 only
@@ -320,18 +320,6 @@ struct SpecialSetup990
 			benderRangeUp,
 			toneControlSource1,
 			toneControlSource2;
-	};
-
-	struct EQ
-	{
-		uint8_t
-			lowFreq,
-			lowGain,
-			midFreq,
-			midQ,
-			midGain,
-			highFreq,
-			highGain;
 	};
 
 	struct Effect
@@ -364,7 +352,7 @@ struct SpecialSetup990
 
 			reverbType,
 			reverbPreDelay,
-			reveryEarlyRefLevel,
+			reverbEarlyRefLevel,
 			reverbHFDamp,
 			reverbTime,
 			reverbLevel;
@@ -382,7 +370,7 @@ struct SpecialSetup990
 	};
 
 	Common common;
-	EQ eq;
+	EQ990 eq;
 	Effect effect;
 	std::array<Key, 61> keys;
 };

@@ -334,9 +334,12 @@ struct ToneVST
 			filterMode,
 			cutoffFreq,
 			resonance,
-			keyFollow,
-			aTouchSens,  // +50
-			lfoSelect,
+			keyFollow;
+		int8_t
+			aTouchSens;  // +50
+		uint8_t
+			lfoSelect;
+		int8_t
 			lfoDepth,  // +50
 			envDepth;  // +50
 	};
@@ -362,20 +365,26 @@ struct ToneVST
 	{
 		uint8_t
 			biasDirection,
-			biasPoint,
-			biasLevel,  // +10
-			level,
-			aTouchSens,  // +50
-			lfoSelect,
+			biasPoint;
+		int8_t
+			biasLevel;  // +10
+		uint8_t
+			level;
+		int8_t
+			aTouchSens;  // +50
+		uint8_t
+			lfoSelect;
+		int8_t
 			lfoDepth;  // +50
 	};
 
 	struct TVAEnv
 	{
-		uint8_t
+		int8_t
 			velo,      // +50
 			timeVelo,  // +50
-			timeKF,    // +10
+			timeKF;    // +10
+		uint8_t
 			level1,
 			level2,
 			sustainLevel,

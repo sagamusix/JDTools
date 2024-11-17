@@ -15,8 +15,10 @@ add_executable(JDTools
 	JDTools/JD-990.hpp
 	JDTools/JDTools.hpp
 	JDTools/PrecomputedTablesVST.hpp
+	JDTools/PrintPatchData.cpp
 	JDTools/SVZ.hpp
 	JDTools/Utils.hpp
+	JDTools/WaveformNames.hpp
 	JDTools/miniz.c
 	JDTools/miniz.h
 	JDTools/resource.h)

@@ -90,7 +90,8 @@ namespace
 			const SVZChunkHeaderEXTa expected{};
 			return chunkHeader.size >= sizeof(*this)
 				&& unknown1 == expected.unknown1
-				&& unknown2 == expected.unknown2;
+				&& unknown2 == expected.unknown2
+				&& uncompressedSize > 0;
 		}
 	};
 

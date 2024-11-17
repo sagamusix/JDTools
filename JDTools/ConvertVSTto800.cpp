@@ -33,7 +33,7 @@ static bool MapToArrayIndex(const T value, const T (&values)[N], uint8_t &target
 static double IndexToNoteDuration(const uint8_t index)
 {
 	static constexpr uint8_t Divisor[] = { 64, 64, 32, 32, 16, 32, 16, 8, 16, 8, 4, 8, 4, 2, 4, 2, 1, 2, 1, 1, 1, 1, 1 };
-	static constexpr uint8_t NoteType[] = { 3, 1, 3, 1, 3, 2, 1, 3, 2, 1, 3, 2, 1, 3, 2, 1, 3, 2, 1, 3, 2, 1, 1 };
+	static constexpr uint8_t NoteType[] = { 3, 1,   3,  1,  3,  2,  1, 3,  2, 1, 3, 2, 1, 3, 2, 1, 3, 2, 1, 3, 2, 1, 1 };
 	double length = 1.0;
 	if(index == 19 || index == 21)
 		length = 2.0;

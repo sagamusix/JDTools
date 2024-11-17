@@ -2,6 +2,8 @@
 // 2022 - 2024 by Johannes Schultz
 // License: BSD 3-clause
 
+#pragma once
+
 #include <cstdint>
 
 // Don't ask me how long it took to compile these tables
